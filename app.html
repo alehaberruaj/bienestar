@@ -227,42 +227,47 @@
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5vcGlvZ291eXV0a3hjbnBkbnB1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1MjIzNTYsImV4cCI6MjA5NzA5ODM1Nn0.yygNvYTjF4fB_5llVCSCPF8I7OH9MA1rgteqs1MpMyE';
     const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+    // c: country code, omit for universal foods shown to everyone
     const FOODS = [
-      { n: 'Hummus', k: 177 }, { n: 'Falafel', k: 333 },
-      { n: 'Tahini (pasta de sésamo)', k: 595 }, { n: 'Pita', k: 275 },
-      { n: 'Laffa', k: 280 }, { n: 'Challah', k: 290 },
-      { n: 'Labaneh', k: 170 }, { n: 'Cottage cheese', k: 98 },
-      { n: 'Burekas de queso', k: 330 }, { n: 'Burekas de papa', k: 300 },
-      { n: 'Shakshuka', k: 100 }, { n: 'Schnitzel de pollo', k: 250 },
-      { n: 'Shawarma de pollo', k: 220 }, { n: 'Shawarma de carne', k: 260 },
-      { n: 'Sabich', k: 210 }, { n: 'Ensalada israelí', k: 50 },
-      { n: 'Ptitim (pasta israelí)', k: 360 }, { n: 'Jachnun', k: 300 },
-      { n: 'Malawach', k: 350 }, { n: 'Bamba', k: 560 },
-      { n: 'Bissli', k: 450 }, { n: 'Halva', k: 516 }, { n: 'Krembo', k: 430 },
+      // Israel
+      { n: 'Hummus', k: 177, c: 'il' }, { n: 'Falafel', k: 333, c: 'il' },
+      { n: 'Tahini (pasta de sésamo)', k: 595, c: 'il' }, { n: 'Pita', k: 275, c: 'il' },
+      { n: 'Laffa', k: 280, c: 'il' }, { n: 'Challah', k: 290, c: 'il' },
+      { n: 'Labaneh', k: 170, c: 'il' }, { n: 'Burekas de queso', k: 330, c: 'il' },
+      { n: 'Burekas de papa', k: 300, c: 'il' }, { n: 'Shakshuka', k: 100, c: 'il' },
+      { n: 'Schnitzel de pollo', k: 250, c: 'il' }, { n: 'Shawarma de pollo', k: 220, c: 'il' },
+      { n: 'Shawarma de carne', k: 260, c: 'il' }, { n: 'Sabich', k: 210, c: 'il' },
+      { n: 'Ensalada israelí', k: 50, c: 'il' }, { n: 'Ptitim', k: 360, c: 'il' },
+      { n: 'Jachnun', k: 300, c: 'il' }, { n: 'Malawach', k: 350, c: 'il' },
+      { n: 'Bamba', k: 560, c: 'il' }, { n: 'Bissli', k: 450, c: 'il' },
+      { n: 'Halva', k: 516, c: 'il' }, { n: 'Krembo', k: 430, c: 'il' },
+      // Argentina
+      { n: 'Asado de tira', k: 289, c: 'ar' }, { n: 'Chorizo', k: 350, c: 'ar' },
+      { n: 'Medialunas', k: 406, c: 'ar' }, { n: 'Alfajor', k: 450, c: 'ar' },
+      { n: 'Dulce de leche', k: 327, c: 'ar' }, { n: 'Galletitas de agua', k: 421, c: 'ar' },
+      { n: 'Merluza', k: 82, c: 'ar' }, { n: 'Ricota', k: 174, c: 'ar' },
+      { n: 'Jamón cocido', k: 145, c: 'ar' }, { n: 'Frutilla', k: 32, c: 'ar' },
+      // Universal
       { n: 'Pechuga de pollo', k: 165 }, { n: 'Muslo de pollo', k: 209 },
-      { n: 'Carne vacuna magra', k: 250 }, { n: 'Asado de tira', k: 289 },
-      { n: 'Chorizo', k: 350 }, { n: 'Jamón cocido', k: 145 },
-      { n: 'Merluza', k: 82 }, { n: 'Salmón', k: 208 },
+      { n: 'Carne vacuna magra', k: 250 }, { n: 'Salmón', k: 208 },
       { n: 'Atún en lata', k: 116 }, { n: 'Huevo entero', k: 143 },
       { n: 'Clara de huevo', k: 52 }, { n: 'Leche entera', k: 61 },
       { n: 'Yogur natural', k: 59 }, { n: 'Yogur griego', k: 100 },
-      { n: 'Queso cremoso', k: 300 }, { n: 'Ricota', k: 174 },
+      { n: 'Queso cremoso', k: 300 }, { n: 'Cottage cheese', k: 98 },
       { n: 'Arroz cocido', k: 130 }, { n: 'Pasta cocida', k: 131 },
       { n: 'Pan blanco', k: 265 }, { n: 'Pan integral', k: 247 },
       { n: 'Avena', k: 389 }, { n: 'Granola', k: 471 },
-      { n: 'Medialunas', k: 406 }, { n: 'Galletitas de agua', k: 421 },
       { n: 'Lechuga', k: 15 }, { n: 'Tomate', k: 18 },
       { n: 'Zanahoria', k: 41 }, { n: 'Brócoli', k: 34 },
       { n: 'Espinaca', k: 23 }, { n: 'Cebolla', k: 40 },
       { n: 'Papa cocida', k: 87 }, { n: 'Batata cocida', k: 90 },
       { n: 'Banana', k: 89 }, { n: 'Manzana', k: 52 },
-      { n: 'Naranja', k: 47 }, { n: 'Frutilla', k: 32 },
-      { n: 'Quinoa cocida', k: 120 }, { n: 'Lentejas cocidas', k: 116 },
-      { n: 'Garbanzos cocidos', k: 164 }, { n: 'Aceite de oliva', k: 884 },
-      { n: 'Almendras', k: 579 }, { n: 'Nueces', k: 654 }, { n: 'Maní', k: 567 },
+      { n: 'Naranja', k: 47 }, { n: 'Quinoa cocida', k: 120 },
+      { n: 'Lentejas cocidas', k: 116 }, { n: 'Garbanzos cocidos', k: 164 },
+      { n: 'Aceite de oliva', k: 884 }, { n: 'Almendras', k: 579 },
+      { n: 'Nueces', k: 654 }, { n: 'Maní', k: 567 },
       { n: 'Azúcar', k: 387 }, { n: 'Miel', k: 304 },
-      { n: 'Dulce de leche', k: 327 }, { n: 'Chocolate negro', k: 546 },
-      { n: 'Alfajor', k: 450 }, { n: 'Helado crema', k: 207 },
+      { n: 'Chocolate negro', k: 546 }, { n: 'Helado crema', k: 207 },
       { n: 'Coca-Cola', k: 37 }, { n: 'Cerveza', k: 43 }, { n: 'Vino tinto', k: 85 },
     ];
 
@@ -750,7 +755,11 @@
     }
 
     // ── Autocomplete ──────────────────────────────────────────────────────────
-    function getAllFoods() { return [...userFoods, ...FOODS]; }
+    function getAllFoods() {
+      const c = userSettings.country || 'world';
+      const localFoods = FOODS.filter(f => !f.c || f.c === c || c === 'world');
+      return [...userFoods, ...localFoods];
+    }
 
     function onFoodInput() {
       selectedKcal100=null;
