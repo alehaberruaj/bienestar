@@ -58,10 +58,6 @@
       <input id="inp-signup-email" type="email" placeholder="Email" class="inp" />
       <select id="inp-signup-country" class="inp">
         <option value="">¿Desde dónde vas a usarlo?</option>
-        <option value="ar">🇦🇷 Argentina</option>
-        <option value="il">🇮🇱 Israel</option>
-        <option value="us">🇺🇸 Estados Unidos</option>
-        <option value="world">🌍 Internacional (global)</option>
       </select>
       <input id="inp-signup-password" type="password" placeholder="Contraseña" class="inp" />
       <p id="auth-error-signup" class="text-sm font-bold text-red-600 hidden"></p>
@@ -142,18 +138,8 @@
         <div style="border-top:1px solid #e5e0d8; padding-top:1rem;">
           <label class="block text-xs font-black uppercase tracking-widest mb-2 text-gray-400">País / Búsqueda</label>
           <div class="flex gap-2">
-            <select id="sel-country" class="inp flex-1 text-sm">
-              <option value="ar">🇦🇷 Argentina</option>
-              <option value="il">🇮🇱 Israel</option>
-              <option value="us">🇺🇸 Estados Unidos</option>
-              <option value="world">🌍 Global</option>
-              <option value="custom">🔧 URL personalizada</option>
-            </select>
+            <select id="sel-country" class="inp flex-1 text-sm"></select>
             <button onclick="saveCountry()" class="btn-ghost rounded-md px-3 py-2 text-sm">Guardar</button>
-          </div>
-          <div id="custom-api-row" class="hidden mt-2 flex gap-2">
-            <input id="inp-custom-api" type="url" placeholder="https://..." class="inp flex-1 text-xs" />
-            <button onclick="saveCustomApi()" class="btn-blue rounded-md px-3 py-2 text-sm">OK</button>
           </div>
           <p id="country-saved" class="text-xs font-bold text-green-700 mt-1 hidden">✓ Guardado</p>
           <p class="text-xs text-gray-400 mt-1">Si los resultados de tu país no son buenos, elegí Global.</p>
@@ -288,7 +274,55 @@
       { id: 'otros',    label: '📦 Otros' },
     ];
 
-    const COUNTRY_FLAGS = { ar:'🇦🇷', il:'🇮🇱', us:'🇺🇸', world:'🌍', custom:'🔧' };
+    const COUNTRIES = [
+      { code:'world', flag:'🌍', name:'Global' },
+      { code:'ar',    flag:'🇦🇷', name:'Argentina' },
+      { code:'au',    flag:'🇦🇺', name:'Australia' },
+      { code:'at',    flag:'🇦🇹', name:'Austria' },
+      { code:'be',    flag:'🇧🇪', name:'Bélgica' },
+      { code:'br',    flag:'🇧🇷', name:'Brasil' },
+      { code:'ca',    flag:'🇨🇦', name:'Canadá' },
+      { code:'cl',    flag:'🇨🇱', name:'Chile' },
+      { code:'cn',    flag:'🇨🇳', name:'China' },
+      { code:'co',    flag:'🇨🇴', name:'Colombia' },
+      { code:'hr',    flag:'🇭🇷', name:'Croacia' },
+      { code:'dk',    flag:'🇩🇰', name:'Dinamarca' },
+      { code:'ec',    flag:'🇪🇨', name:'Ecuador' },
+      { code:'es',    flag:'🇪🇸', name:'España' },
+      { code:'us',    flag:'🇺🇸', name:'Estados Unidos' },
+      { code:'fi',    flag:'🇫🇮', name:'Finlandia' },
+      { code:'fr',    flag:'🇫🇷', name:'Francia' },
+      { code:'de',    flag:'🇩🇪', name:'Alemania' },
+      { code:'gr',    flag:'🇬🇷', name:'Grecia' },
+      { code:'hu',    flag:'🇭🇺', name:'Hungría' },
+      { code:'in',    flag:'🇮🇳', name:'India' },
+      { code:'il',    flag:'🇮🇱', name:'Israel' },
+      { code:'it',    flag:'🇮🇹', name:'Italia' },
+      { code:'jp',    flag:'🇯🇵', name:'Japón' },
+      { code:'mx',    flag:'🇲🇽', name:'México' },
+      { code:'nl',    flag:'🇳🇱', name:'Países Bajos' },
+      { code:'no',    flag:'🇳🇴', name:'Noruega' },
+      { code:'pe',    flag:'🇵🇪', name:'Perú' },
+      { code:'pl',    flag:'🇵🇱', name:'Polonia' },
+      { code:'pt',    flag:'🇵🇹', name:'Portugal' },
+      { code:'uk',    flag:'🇬🇧', name:'Reino Unido' },
+      { code:'ro',    flag:'🇷🇴', name:'Rumania' },
+      { code:'ru',    flag:'🇷🇺', name:'Rusia' },
+      { code:'za',    flag:'🇿🇦', name:'Sudáfrica' },
+      { code:'se',    flag:'🇸🇪', name:'Suecia' },
+      { code:'ch',    flag:'🇨🇭', name:'Suiza' },
+      { code:'tr',    flag:'🇹🇷', name:'Turquía' },
+      { code:'uy',    flag:'🇺🇾', name:'Uruguay' },
+      { code:'ve',    flag:'🇻🇪', name:'Venezuela' },
+    ];
+    const COUNTRY_FLAGS = Object.fromEntries(COUNTRIES.map(c => [c.code, c.flag]));
+
+    function populateCountrySelect(id, addBlank) {
+      const sel = document.getElementById(id);
+      if (!sel) return;
+      sel.innerHTML = (addBlank ? '<option value="">¿Desde dónde vas a usarlo?</option>' : '') +
+        COUNTRIES.map(c => `<option value="${c.code}">${c.flag} ${c.name}</option>`).join('');
+    }
 
     let GOAL = parseInt(localStorage.getItem('goal') || '2000');
     let offset = 0;
@@ -302,12 +336,13 @@
     let manualMode = false;
 
     function getApiBase() {
-      if (userSettings.custom_api_url) return userSettings.custom_api_url.replace(/\/$/, '');
       return `https://${userSettings.country || 'world'}.openfoodfacts.org`;
     }
 
     // ── Auth ──────────────────────────────────────────────────────────────────
     async function init() {
+      populateCountrySelect('inp-signup-country', true);
+      populateCountrySelect('sel-country', false);
       const { data: { session } } = await sb.auth.getSession();
       if (session) { currentUser = session.user; await afterLogin(); }
       else showScreen('auth');
@@ -411,13 +446,7 @@
       document.getElementById('goal-display').textContent = GOAL;
       document.getElementById('goal-saved').classList.add('hidden');
       document.getElementById('country-saved').classList.add('hidden');
-      const sel = document.getElementById('sel-country');
-      sel.value = userSettings.custom_api_url ? 'custom' : (userSettings.country || 'world');
-      document.getElementById('custom-api-row').classList.toggle('hidden', sel.value !== 'custom');
-      if (userSettings.custom_api_url) document.getElementById('inp-custom-api').value = userSettings.custom_api_url;
-      sel.onchange = () => {
-        document.getElementById('custom-api-row').classList.toggle('hidden', sel.value !== 'custom');
-      };
+      document.getElementById('sel-country').value = userSettings.country || 'world';
       renderCustomFoodsList();
       document.getElementById('panel').classList.remove('translate-x-full');
       document.getElementById('panel-overlay').classList.remove('hidden');
@@ -437,18 +466,9 @@
 
     async function saveCountry() {
       const country = document.getElementById('sel-country').value;
-      if (country === 'custom') {
-        document.getElementById('inp-custom-api').focus();
-        return;
-      }
+      if (!country) return;
       userSettings.country = country;
       userSettings.custom_api_url = null;
-      await persistSettings();
-    }
-
-    async function saveCustomApi() {
-      userSettings.custom_api_url = document.getElementById('inp-custom-api').value.trim() || null;
-      if (userSettings.custom_api_url) userSettings.country = 'custom';
       await persistSettings();
     }
 
@@ -585,7 +605,7 @@
 
     function showSuggestions(local,api) {
       const box=document.getElementById('suggestions');
-      const flag=COUNTRY_FLAGS[userSettings.custom_api_url?'custom':userSettings.country]||'🌍';
+      const flag=COUNTRY_FLAGS[userSettings.country]||'🌍';
       const all=[
         ...local.map(f=>({...f,badge:f.custom?'⭐':''})),
         ...api.map(f=>({...f,badge:flag}))
