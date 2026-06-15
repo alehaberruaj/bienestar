@@ -233,10 +233,13 @@
       <!-- Nota del día -->
       <div class="card p-4 shadow-hard-sm mb-6">
         <label class="block text-xs font-black uppercase tracking-widest mb-2">📝 Nota del día</label>
-        <textarea id="day-note" maxlength="500" placeholder="Anotá algo sobre este día…" class="inp textarea w-full text-sm" rows="2" oninput="onNoteInput()" onblur="saveNote()"></textarea>
-        <div class="flex justify-between mt-1">
-          <span id="note-saved" class="text-xs font-bold text-green-700 hidden">✓ Guardado</span>
-          <span class="text-xs text-gray-400 ml-auto"><span id="note-chars">0</span>/500</span>
+        <textarea id="day-note" maxlength="500" placeholder="Anotá algo sobre este día…" class="inp textarea w-full text-sm" rows="2" oninput="onNoteInput()"></textarea>
+        <div class="flex items-center justify-between mt-2">
+          <span class="text-xs text-gray-400"><span id="note-chars">0</span>/500</span>
+          <div class="flex items-center gap-2">
+            <span id="note-saved" class="text-xs font-bold text-green-700 hidden">✓ Guardado</span>
+            <button onclick="saveNote()" class="btn-blue rounded-md px-4 py-1.5 text-sm">Guardar</button>
+          </div>
         </div>
       </div>
 
@@ -1137,7 +1140,10 @@
       const weights = data.map(d => Number(d.weight_kg));
       const minW = Math.min(...weights), maxW = Math.max(...weights);
       const range = maxW - minW || 1;
-      const xS = i => padL + (i / Math.max(data.length - 1, 1)) * (W - padL - padR);
+      const timestamps = data.map(d => new Date(d.log_date + 'T00:00:00').getTime());
+      const minT = timestamps[0], maxT = timestamps[timestamps.length - 1];
+      const timeRange = maxT - minT || 1;
+      const xS = i => padL + ((timestamps[i] - minT) / timeRange) * (W - padL - padR);
       const yS = w => padT + (1 - (w - minW) / range) * (H - padT - padB);
       const pts = data.map((d,i) => `${xS(i)},${yS(Number(d.weight_kg))}`).join(' ');
       // Y axis labels
