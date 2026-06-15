@@ -14,7 +14,41 @@
 <body class="bg-gray-950 text-gray-100 min-h-screen flex flex-col items-center py-8 px-4">
 
   <div class="w-full max-w-lg">
-    <h1 class="text-2xl font-bold tracking-tight text-center mb-6">🥗 Calorías</h1>
+    <div class="flex items-center justify-between mb-6">
+      <div class="w-8"></div>
+      <h1 class="text-2xl font-bold tracking-tight">🥗 Calorías</h1>
+      <button onclick="openPanel()" class="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-800 hover:bg-gray-700 transition text-gray-400 hover:text-white" title="Panel de control">
+        ⚙️
+      </button>
+    </div>
+
+    <!-- Panel de control -->
+    <div id="panel-overlay" class="fixed inset-0 bg-black/60 z-30 hidden" onclick="closePanel()"></div>
+    <div id="panel" class="fixed top-0 right-0 h-full w-72 bg-gray-900 border-l border-gray-800 z-40 translate-x-full transition-transform duration-300 flex flex-col">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-gray-800">
+        <h2 class="font-semibold text-sm tracking-wide">Panel de control</h2>
+        <button onclick="closePanel()" class="text-gray-400 hover:text-white text-xl leading-none">×</button>
+      </div>
+      <div class="flex-1 overflow-y-auto px-5 py-4 space-y-6">
+
+        <!-- Objetivo diario -->
+        <div>
+          <label class="block text-xs font-semibold text-gray-400 uppercase tracking-widest mb-2">Objetivo diario</label>
+          <div class="flex gap-2">
+            <input id="inp-goal" type="number" min="500" max="9999" step="50"
+              class="flex-1 bg-gray-800 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              placeholder="kcal" />
+            <button onclick="saveGoal()"
+              class="bg-indigo-600 hover:bg-indigo-500 transition rounded-lg px-4 py-2 text-sm font-semibold">
+              Guardar
+            </button>
+          </div>
+          <p id="goal-saved" class="text-xs text-emerald-400 mt-1 hidden">✓ Guardado</p>
+          <p class="text-xs text-gray-500 mt-2">Actual: <span id="goal-display"></span> kcal/día</p>
+        </div>
+
+      </div>
+    </div>
 
     <!-- Day navigation -->
     <div class="flex items-center justify-between mb-4">
@@ -186,7 +220,7 @@
       { n: 'Vino blanco', k: 82 },
     ];
 
-    const GOAL = 2000;
+    let GOAL = parseInt(localStorage.getItem('goal') || '2000');
     let offset = 0;
     let selectedKcal100 = null;
     let suggestionIndex = -1;
@@ -448,6 +482,28 @@
 
     function esc(s) {
       return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    // ── Panel ────────────────────────────────────────────────────────────────
+    function openPanel() {
+      document.getElementById('inp-goal').value = GOAL;
+      document.getElementById('goal-display').textContent = GOAL;
+      document.getElementById('goal-saved').classList.add('hidden');
+      document.getElementById('panel').classList.remove('translate-x-full');
+      document.getElementById('panel-overlay').classList.remove('hidden');
+    }
+    function closePanel() {
+      document.getElementById('panel').classList.add('translate-x-full');
+      document.getElementById('panel-overlay').classList.add('hidden');
+    }
+    function saveGoal() {
+      const val = parseInt(document.getElementById('inp-goal').value);
+      if (!val || val < 500) return;
+      GOAL = val;
+      localStorage.setItem('goal', val);
+      document.getElementById('goal-display').textContent = val;
+      document.getElementById('goal-saved').classList.remove('hidden');
+      render();
     }
 
     document.addEventListener('click', e => {
