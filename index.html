@@ -3,143 +3,168 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Contador de Calorías</title>
+  <title>Calorías</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    .entry-row .delete-btn { opacity: 0; transition: opacity 0.15s; }
+    body { background: #f0ede6; color: #0a0a0a; font-family: system-ui, sans-serif; }
+    input, button { font-family: inherit; }
+    .entry-row .delete-btn { opacity: 0; transition: opacity 0.12s; }
     .entry-row:hover .delete-btn { opacity: 1; }
     #suggestions:empty { display: none; }
+    .border-hard { border: 2px solid #0a0a0a; }
+    .shadow-hard { box-shadow: 3px 3px 0 #0a0a0a; }
+    .shadow-hard-sm { box-shadow: 2px 2px 0 #0a0a0a; }
+    .btn-blue {
+      background: #0055ff; color: #fff; border: 2px solid #0a0a0a;
+      box-shadow: 3px 3px 0 #0a0a0a; font-weight: 700;
+      transition: transform 0.08s, box-shadow 0.08s;
+    }
+    .btn-blue:active { transform: translate(2px,2px); box-shadow: 1px 1px 0 #0a0a0a; }
+    .btn-black {
+      background: #0a0a0a; color: #fff; border: 2px solid #0a0a0a;
+      box-shadow: 3px 3px 0 #555; font-weight: 700;
+      transition: transform 0.08s, box-shadow 0.08s;
+    }
+    .btn-black:active { transform: translate(2px,2px); box-shadow: 1px 1px 0 #555; }
+    .btn-ghost {
+      background: #f0ede6; color: #0a0a0a; border: 2px solid #0a0a0a;
+      box-shadow: 3px 3px 0 #0a0a0a; font-weight: 700;
+      transition: transform 0.08s, box-shadow 0.08s;
+    }
+    .btn-ghost:active { transform: translate(2px,2px); box-shadow: 1px 1px 0 #0a0a0a; }
+    .meal-btn {
+      background: #f0ede6; color: #555; border: 2px solid #ccc;
+      font-weight: 600; font-size: 0.75rem; padding: 0.5rem 0.25rem;
+      transition: all 0.1s; cursor: pointer; border-radius: 6px;
+    }
+    .meal-btn.active {
+      background: #0a0a0a; color: #fff; border-color: #0a0a0a;
+      box-shadow: 2px 2px 0 #555;
+    }
+    .inp {
+      background: #fff; border: 2px solid #0a0a0a; border-radius: 6px;
+      padding: 0.6rem 0.75rem; font-size: 0.875rem; width: 100%;
+      outline: none; transition: box-shadow 0.1s;
+    }
+    .inp:focus { box-shadow: 3px 3px 0 #0055ff; }
+    .card { background: #fff; border: 2px solid #0a0a0a; border-radius: 8px; }
   </style>
 </head>
-<body class="bg-gray-950 text-gray-100 min-h-screen flex flex-col items-center py-8 px-4">
+<body class="min-h-screen flex flex-col items-center py-8 px-4">
 
   <div class="w-full max-w-lg">
-    <div class="flex items-center justify-between mb-6">
-      <div class="w-8"></div>
-      <h1 class="text-2xl font-bold tracking-tight">🥗 Calorías</h1>
-      <button onclick="openPanel()" class="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-800 hover:bg-gray-700 transition text-gray-400 hover:text-white" title="Panel de control">
-        ⚙️
-      </button>
+
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-8">
+      <div class="w-10"></div>
+      <h1 class="text-3xl font-black tracking-tight">Calorías</h1>
+      <button onclick="openPanel()" class="btn-ghost w-10 h-10 flex items-center justify-center rounded-md text-lg" title="Configuración">⚙</button>
     </div>
 
     <!-- Panel de control -->
-    <div id="panel-overlay" class="fixed inset-0 bg-black/60 z-30 hidden" onclick="closePanel()"></div>
-    <div id="panel" class="fixed top-0 right-0 h-full w-72 bg-gray-900 border-l border-gray-800 z-40 translate-x-full transition-transform duration-300 flex flex-col">
-      <div class="flex items-center justify-between px-5 py-4 border-b border-gray-800">
-        <h2 class="font-semibold text-sm tracking-wide">Panel de control</h2>
-        <button onclick="closePanel()" class="text-gray-400 hover:text-white text-xl leading-none">×</button>
+    <div id="panel-overlay" class="fixed inset-0 bg-black/40 z-30 hidden" onclick="closePanel()"></div>
+    <div id="panel" class="fixed top-0 right-0 h-full w-72 z-40 translate-x-full transition-transform duration-300 flex flex-col" style="background:#f0ede6; border-left: 2px solid #0a0a0a;">
+      <div class="flex items-center justify-between px-5 py-4" style="border-bottom:2px solid #0a0a0a;">
+        <h2 class="font-black text-base">Configuración</h2>
+        <button onclick="closePanel()" class="btn-ghost w-8 h-8 flex items-center justify-center rounded text-lg font-bold">×</button>
       </div>
-      <div class="flex-1 overflow-y-auto px-5 py-4 space-y-6">
-
-        <!-- Objetivo diario -->
+      <div class="flex-1 overflow-y-auto px-5 py-5 space-y-6">
         <div>
-          <label class="block text-xs font-semibold text-gray-400 uppercase tracking-widest mb-2">Objetivo diario</label>
+          <label class="block text-xs font-black uppercase tracking-widest mb-2">Objetivo diario</label>
           <div class="flex gap-2">
-            <input id="inp-goal" type="number" min="500" max="9999" step="50"
-              class="flex-1 bg-gray-800 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              placeholder="kcal" />
-            <button onclick="saveGoal()"
-              class="bg-indigo-600 hover:bg-indigo-500 transition rounded-lg px-4 py-2 text-sm font-semibold">
-              Guardar
-            </button>
+            <input id="inp-goal" type="number" min="500" max="9999" step="50" class="inp flex-1" placeholder="kcal" />
+            <button onclick="saveGoal()" class="btn-blue rounded-md px-4 py-2 text-sm">Guardar</button>
           </div>
-          <p id="goal-saved" class="text-xs text-emerald-400 mt-1 hidden">✓ Guardado</p>
-          <p class="text-xs text-gray-500 mt-2">Actual: <span id="goal-display"></span> kcal/día</p>
+          <p id="goal-saved" class="text-xs font-bold text-green-700 mt-1 hidden">✓ Guardado</p>
+          <p class="text-xs text-gray-500 mt-2">Actual: <span id="goal-display" class="font-bold text-black"></span> kcal/día</p>
         </div>
-
       </div>
     </div>
 
     <!-- Day navigation -->
-    <div class="flex items-center justify-between mb-4">
-      <button onclick="changeDay(-1)" class="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition text-xl leading-none">‹</button>
+    <div class="flex items-center justify-between mb-6">
+      <button onclick="changeDay(-1)" class="btn-ghost w-12 h-12 flex items-center justify-center rounded-md text-2xl font-black">‹</button>
       <div class="text-center">
-        <div id="day-label" class="text-lg font-semibold"></div>
-        <div id="day-sub" class="text-xs text-gray-400"></div>
+        <div id="day-label" class="text-xl font-black"></div>
+        <div id="day-sub" class="text-sm text-gray-500 font-medium"></div>
       </div>
-      <button onclick="changeDay(1)" id="btn-next" class="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition text-xl leading-none disabled:opacity-30 disabled:cursor-not-allowed">›</button>
+      <button onclick="changeDay(1)" id="btn-next" class="btn-ghost w-12 h-12 flex items-center justify-center rounded-md text-2xl font-black disabled:opacity-30 disabled:cursor-not-allowed disabled:shadow-none">›</button>
     </div>
 
-    <!-- Total badge -->
-    <div class="flex justify-center mb-6">
-      <div id="total-badge" class="flex flex-col items-center justify-center w-36 h-36 rounded-full border-4 transition-colors duration-500 border-gray-700">
-        <span id="total-cal" class="text-3xl font-bold">0</span>
-        <span class="text-xs text-gray-400 mt-1">kcal</span>
-        <span id="total-pct" class="text-xs font-semibold mt-1 text-gray-500">0% del objetivo</span>
+    <!-- Total -->
+    <div class="card p-5 mb-6 shadow-hard">
+      <div class="flex items-end justify-between mb-3">
+        <div>
+          <span id="total-cal" class="text-5xl font-black leading-none">0</span>
+          <span class="text-lg font-bold text-gray-400 ml-1">kcal</span>
+        </div>
+        <span id="total-pct" class="text-sm font-bold text-gray-400 pb-1">0% del objetivo</span>
+      </div>
+      <div class="w-full rounded-full overflow-hidden" style="height:10px; background:#e5e0d8; border:1.5px solid #ccc;">
+        <div id="progress-bar" class="h-full rounded-full transition-all duration-500" style="width:0%; background:#0055ff;"></div>
       </div>
     </div>
 
-    <!-- Add form -->
-    <form id="add-form" onsubmit="addEntry(event)" autocomplete="off" class="mb-6 space-y-2">
+    <!-- Form -->
+    <form id="add-form" onsubmit="addEntry(event)" autocomplete="off" class="mb-6 space-y-3">
 
       <!-- Meal selector -->
-      <div class="flex gap-1">
-        <button type="button" onclick="selectMeal('desayuno')" data-meal="desayuno"
-          class="meal-btn flex-1 py-1.5 rounded-lg text-xs font-semibold transition border border-transparent bg-gray-800 text-gray-400">🌅 Desayuno</button>
-        <button type="button" onclick="selectMeal('almuerzo')" data-meal="almuerzo"
-          class="meal-btn flex-1 py-1.5 rounded-lg text-xs font-semibold transition border border-transparent bg-gray-800 text-gray-400">🌞 Almuerzo</button>
-        <button type="button" onclick="selectMeal('merienda')" data-meal="merienda"
-          class="meal-btn flex-1 py-1.5 rounded-lg text-xs font-semibold transition border border-transparent bg-gray-800 text-gray-400">🍎 Merienda</button>
-        <button type="button" onclick="selectMeal('cena')" data-meal="cena"
-          class="meal-btn flex-1 py-1.5 rounded-lg text-xs font-semibold transition border border-transparent bg-gray-800 text-gray-400">🌙 Cena</button>
-        <button type="button" onclick="selectMeal('otros')" data-meal="otros"
-          class="meal-btn flex-1 py-1.5 rounded-lg text-xs font-semibold transition border border-transparent bg-gray-800 text-gray-400">📦 Otros</button>
+      <div class="flex gap-1.5">
+        <button type="button" onclick="selectMeal('desayuno')" data-meal="desayuno" class="meal-btn flex-1">🌅<br>Desayuno</button>
+        <button type="button" onclick="selectMeal('almuerzo')" data-meal="almuerzo" class="meal-btn flex-1">🌞<br>Almuerzo</button>
+        <button type="button" onclick="selectMeal('merienda')" data-meal="merienda" class="meal-btn flex-1">🍎<br>Merienda</button>
+        <button type="button" onclick="selectMeal('cena')"     data-meal="cena"     class="meal-btn flex-1">🌙<br>Cena</button>
+        <button type="button" onclick="selectMeal('otros')"    data-meal="otros"    class="meal-btn flex-1">📦<br>Otros</button>
       </div>
 
       <!-- Food search -->
       <div id="mode-search" class="relative">
-        <input id="inp-food" type="text" placeholder="Buscar alimento…"
-          class="w-full bg-gray-800 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        <input id="inp-food" type="text" placeholder="Buscar alimento…" class="inp"
           oninput="onFoodInput()" onkeydown="onFoodKey(event)" />
         <div id="suggestions"
-          class="absolute z-20 w-full bg-gray-800 border border-gray-700 rounded-lg mt-1 shadow-xl overflow-y-auto max-h-52 hidden"></div>
+          class="absolute z-20 w-full bg-white rounded-md mt-1 shadow-hard overflow-y-auto max-h-52 hidden"
+          style="border:2px solid #0a0a0a;"></div>
       </div>
 
-      <!-- Manual name (hidden by default) -->
+      <!-- Manual name -->
       <div id="mode-manual" class="hidden">
-        <input id="inp-manual-name" type="text" placeholder="Nombre del alimento"
-          class="w-full bg-gray-800 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+        <input id="inp-manual-name" type="text" placeholder="Nombre del alimento" class="inp" style="border-color:#d97706; box-shadow:none;" />
       </div>
 
       <!-- Toggle -->
       <div class="text-right">
         <button type="button" id="toggle-mode-btn" onclick="toggleManualMode()"
-          class="text-xs text-gray-500 hover:text-gray-300 transition underline underline-offset-2">
+          class="text-xs font-bold text-gray-400 hover:text-black transition underline underline-offset-2">
           No está en la lista → ingresar manual
         </button>
       </div>
 
-      <!-- Weight + preview + add (modo búsqueda) -->
+      <!-- Weight row -->
       <div id="row-weight" class="flex gap-2">
         <div class="relative flex-1">
-          <input id="inp-weight" type="number" placeholder="Gramos" min="1"
-            class="w-full bg-gray-800 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 pr-20"
-            oninput="updatePreview()" />
-          <span id="kcal-ref" class="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-500 pointer-events-none"></span>
+          <input id="inp-weight" type="number" placeholder="Gramos" min="1" class="inp pr-20" oninput="updatePreview()" />
+          <span id="kcal-ref" class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400 pointer-events-none"></span>
         </div>
-        <div id="calc-preview"
-          class="w-24 flex items-center justify-center bg-gray-900 rounded-lg text-sm font-mono text-gray-400">— kcal</div>
-        <button type="submit"
-          class="bg-indigo-600 hover:bg-indigo-500 transition rounded-lg px-4 py-2 text-sm font-semibold">+</button>
+        <div id="calc-preview" class="w-28 card flex items-center justify-center text-sm font-black text-gray-400 shadow-hard-sm">— kcal</div>
+        <button type="submit" class="btn-blue rounded-md px-5 text-xl">+</button>
       </div>
 
-      <!-- Manual kcal row (hidden by default) -->
+      <!-- Manual kcal row -->
       <div id="row-manual-kcal" class="hidden flex gap-2">
-        <input id="inp-manual-kcal" type="number" placeholder="Calorías totales (kcal)" min="1"
-          class="flex-1 bg-gray-800 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
-        <button type="submit"
-          class="bg-amber-600 hover:bg-amber-500 transition rounded-lg px-4 py-2 text-sm font-semibold">+</button>
+        <input id="inp-manual-kcal" type="number" placeholder="Calorías totales (kcal)" min="1" class="inp flex-1" style="border-color:#d97706;" />
+        <button type="submit" class="btn-black rounded-md px-5 text-xl" style="background:#d97706; border-color:#92400e; box-shadow: 3px 3px 0 #92400e;">+</button>
       </div>
     </form>
 
     <!-- Entries list -->
-    <div id="entries-list" class="space-y-2 mb-8 min-h-[2rem]"></div>
+    <div id="entries-list" class="space-y-4 mb-8 min-h-[2rem]"></div>
 
     <!-- 7-day chart -->
-    <div class="bg-gray-900 rounded-xl p-4">
-      <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Últimos 7 días</h2>
-      <div id="week-chart" class="flex items-end justify-between gap-1 h-24"></div>
+    <div class="card p-4 shadow-hard">
+      <h2 class="text-xs font-black uppercase tracking-widest mb-4">Últimos 7 días</h2>
+      <div id="week-chart" class="flex items-end justify-between gap-1.5 h-24"></div>
     </div>
+
   </div>
 
   <script>
@@ -300,13 +325,36 @@
     let manualMode = false;
 
     const MEALS = [
-      { id: 'desayuno', label: '🌅 Desayuno' },
-      { id: 'almuerzo', label: '🌞 Almuerzo' },
-      { id: 'merienda', label: '🍎 Merienda' },
-      { id: 'cena',     label: '🌙 Cena' },
-      { id: 'otros',    label: '📦 Otros' },
+      { id: 'desayuno', label: '🌅 Desayuno', color: '#0055ff' },
+      { id: 'almuerzo', label: '🌞 Almuerzo', color: '#0055ff' },
+      { id: 'merienda', label: '🍎 Merienda', color: '#0055ff' },
+      { id: 'cena',     label: '🌙 Cena',     color: '#0055ff' },
+      { id: 'otros',    label: '📦 Otros',    color: '#0055ff' },
     ];
 
+    // ── Panel ────────────────────────────────────────────────────────────────
+    function openPanel() {
+      document.getElementById('inp-goal').value = GOAL;
+      document.getElementById('goal-display').textContent = GOAL;
+      document.getElementById('goal-saved').classList.add('hidden');
+      document.getElementById('panel').classList.remove('translate-x-full');
+      document.getElementById('panel-overlay').classList.remove('hidden');
+    }
+    function closePanel() {
+      document.getElementById('panel').classList.add('translate-x-full');
+      document.getElementById('panel-overlay').classList.add('hidden');
+    }
+    function saveGoal() {
+      const val = parseInt(document.getElementById('inp-goal').value);
+      if (!val || val < 500) return;
+      GOAL = val;
+      localStorage.setItem('goal', val);
+      document.getElementById('goal-display').textContent = val;
+      document.getElementById('goal-saved').classList.remove('hidden');
+      render();
+    }
+
+    // ── Manual mode ──────────────────────────────────────────────────────────
     function toggleManualMode() {
       manualMode = !manualMode;
       document.getElementById('mode-search').classList.toggle('hidden', manualMode);
@@ -322,13 +370,11 @@
       else document.getElementById('inp-food').focus();
     }
 
+    // ── Meal selector ────────────────────────────────────────────────────────
     function selectMeal(meal) {
       selectedMeal = meal;
       document.querySelectorAll('.meal-btn').forEach(btn => {
-        const active = btn.dataset.meal === meal;
-        btn.className = `meal-btn flex-1 py-1.5 rounded-lg text-xs font-semibold transition border ${
-          active ? 'border-indigo-500 bg-indigo-600/20 text-indigo-300' : 'border-transparent bg-gray-800 text-gray-400'
-        }`;
+        btn.classList.toggle('active', btn.dataset.meal === meal);
       });
     }
 
@@ -363,9 +409,9 @@
     }
     function colorFor(total) {
       const pct = total / GOAL;
-      if (pct < 0.75) return { ring: 'border-emerald-500', text: 'text-emerald-400', bar: '#10b981' };
-      if (pct < 1.00) return { ring: 'border-yellow-400', text: 'text-yellow-300', bar: '#facc15' };
-      return { ring: 'border-red-500', text: 'text-red-400', bar: '#ef4444' };
+      if (pct < 0.75) return { bar: '#16a34a', text: '#16a34a' };
+      if (pct < 1.00) return { bar: '#d97706', text: '#d97706' };
+      return { bar: '#dc2626', text: '#dc2626' };
     }
 
     // ── Autocomplete ─────────────────────────────────────────────────────────
@@ -373,12 +419,11 @@
       selectedKcal100 = null;
       document.getElementById('kcal-ref').textContent = '';
       document.getElementById('calc-preview').textContent = '— kcal';
+      document.getElementById('calc-preview').style.color = '#9ca3af';
       const q = document.getElementById('inp-food').value.trim().toLowerCase();
       if (!q) { hideSuggestions(); return; }
-
       const local = FOODS.filter(f => normalize(f.n).includes(normalize(q))).slice(0, 6);
       showSuggestions(local, []);
-
       clearTimeout(apiDebounce);
       if (q.length >= 3) {
         apiDebounce = setTimeout(() => fetchOpenFoodFacts(q, local), 500);
@@ -400,26 +445,21 @@
           .filter(p => !alreadyShown.some(a => normalize(a.n) === normalize(p.n)))
           .slice(0, 5);
         const currentQ = document.getElementById('inp-food').value.trim().toLowerCase();
-        if (normalize(currentQ) === normalize(q)) {
-          showSuggestions(alreadyShown, apiResults);
-        }
-      } catch { /* sin internet: solo local */ }
+        if (normalize(currentQ) === normalize(q)) showSuggestions(alreadyShown, apiResults);
+      } catch {}
     }
 
     function showSuggestions(local, api) {
       const box = document.getElementById('suggestions');
-      const all = [
-        ...local.map(f => ({ ...f, source: 'local' })),
-        ...api.map(f => ({ ...f, source: 'api' })),
-      ];
+      const all = [...local.map(f => ({...f, source:'local'})), ...api.map(f => ({...f, source:'api'}))];
       if (!all.length) { hideSuggestions(); return; }
       suggestionIndex = -1;
-      box.innerHTML = all.map((f, i) => `
-        <div class="suggestion-item px-3 py-2 text-sm cursor-pointer hover:bg-gray-700 flex justify-between items-center"
+      box.innerHTML = all.map(f => `
+        <div class="suggestion-item px-3 py-2.5 text-sm cursor-pointer hover:bg-blue-50 flex justify-between items-center"
              data-kcal="${f.k}" data-name="${esc(f.n)}"
-             onmousedown="selectFood('${esc(f.n)}', ${f.k})">
-          <span>${esc(f.n)}</span>
-          <span class="text-gray-400 text-xs ml-2 shrink-0">${f.k} kcal/100g</span>
+             onmousedown="selectFood('${esc(f.n)}', ${f.k})" style="border-bottom:1px solid #eee;">
+          <span class="font-medium">${esc(f.n)}</span>
+          <span class="text-gray-400 text-xs ml-2 shrink-0 font-bold">${f.k} kcal/100g</span>
         </div>`).join('');
       box.classList.remove('hidden');
     }
@@ -441,25 +481,14 @@
     function onFoodKey(e) {
       const items = document.querySelectorAll('.suggestion-item');
       if (!items.length) return;
-      if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        suggestionIndex = Math.min(suggestionIndex + 1, items.length - 1);
-        highlightSuggestion(items);
-      } else if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        suggestionIndex = Math.max(suggestionIndex - 1, 0);
-        highlightSuggestion(items);
-      } else if (e.key === 'Enter' && suggestionIndex >= 0) {
-        e.preventDefault();
-        const item = items[suggestionIndex];
-        selectFood(item.dataset.name, parseInt(item.dataset.kcal));
-      } else if (e.key === 'Escape') {
-        hideSuggestions();
-      }
+      if (e.key === 'ArrowDown') { e.preventDefault(); suggestionIndex = Math.min(suggestionIndex+1, items.length-1); highlightSuggestion(items); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); suggestionIndex = Math.max(suggestionIndex-1, 0); highlightSuggestion(items); }
+      else if (e.key === 'Enter' && suggestionIndex >= 0) { e.preventDefault(); const item = items[suggestionIndex]; selectFood(item.dataset.name, parseInt(item.dataset.kcal)); }
+      else if (e.key === 'Escape') hideSuggestions();
     }
 
     function highlightSuggestion(items) {
-      items.forEach((el, i) => el.classList.toggle('bg-gray-700', i === suggestionIndex));
+      items.forEach((el, i) => el.style.background = i === suggestionIndex ? '#eff6ff' : '');
     }
 
     // ── Calorie preview ──────────────────────────────────────────────────────
@@ -469,10 +498,10 @@
       if (selectedKcal100 && weight > 0) {
         const cal = Math.round(selectedKcal100 * weight / 100);
         preview.textContent = `${cal} kcal`;
-        preview.className = 'w-24 flex items-center justify-center bg-gray-900 rounded-lg text-sm font-mono text-indigo-300 font-semibold';
+        preview.style.color = '#0055ff';
       } else {
         preview.textContent = '— kcal';
-        preview.className = 'w-24 flex items-center justify-center bg-gray-900 rounded-lg text-sm font-mono text-gray-400';
+        preview.style.color = '#9ca3af';
       }
     }
 
@@ -481,50 +510,44 @@
       const iso = isoDate(offset);
       const entries = getEntries(iso);
       const total = entries.reduce((s, e) => s + e.calories, 0);
-
-      const pct = Math.round((total / GOAL) * 100);
+      const pct = Math.min(Math.round((total / GOAL) * 100), 100);
       const c = colorFor(total);
-      const badge = document.getElementById('total-badge');
-      badge.className = `flex flex-col items-center justify-center w-36 h-36 rounded-full border-4 transition-colors duration-500 ${total > 0 ? c.ring : 'border-gray-700'}`;
+
       document.getElementById('total-cal').textContent = total;
       const pctEl = document.getElementById('total-pct');
-      pctEl.className = `text-xs font-semibold mt-1 ${total > 0 ? c.text : 'text-gray-500'}`;
-      pctEl.textContent = `${pct}% del objetivo`;
+      pctEl.textContent = `${Math.round((total/GOAL)*100)}% del objetivo`;
+      pctEl.style.color = total > 0 ? c.text : '#9ca3af';
+      document.getElementById('progress-bar').style.width = pct + '%';
+      document.getElementById('progress-bar').style.background = total > 0 ? c.bar : '#0055ff';
 
       const list = document.getElementById('entries-list');
       if (!entries.length) {
-        list.innerHTML = '<p class="text-center text-gray-600 text-sm py-4">Sin entradas para este día.</p>';
+        list.innerHTML = '<p class="text-center text-gray-400 text-sm py-6 font-medium">Sin entradas para este día.</p>';
       } else {
         const byMeal = {};
-        entries.forEach(e => {
-          const m = e.meal || 'otros';
-          if (!byMeal[m]) byMeal[m] = [];
-          byMeal[m].push(e);
-        });
-        list.innerHTML = MEALS
-          .filter(m => byMeal[m.id])
-          .map(m => {
-            const group = byMeal[m.id];
-            const groupTotal = group.reduce((s, e) => s + e.calories, 0);
-            const rows = group.map(e => `
-              <div class="entry-row flex items-center justify-between bg-gray-800 rounded-lg px-4 py-2 text-sm">
-                <div class="flex-1 min-w-0">
-                  <div class="truncate">${esc(e.name)}</div>
-                  ${e.weight ? `<div class="text-xs text-gray-500">${e.weight}g · ${e.kcal100} kcal/100g</div>` : ''}
-                </div>
-                <span class="text-gray-300 font-mono mx-3 shrink-0">${e.calories} kcal</span>
-                <button class="delete-btn text-red-400 hover:text-red-300 text-base leading-none shrink-0"
-                  onclick="deleteEntry('${iso}', ${e.id})">✕</button>
-              </div>`).join('');
-            return `
-              <div class="mb-4">
-                <div class="flex items-center justify-between mb-1 px-1">
-                  <span class="text-xs font-semibold text-gray-400 uppercase tracking-widest">${m.label}</span>
-                  <span class="text-xs text-gray-500 font-mono">${groupTotal} kcal</span>
-                </div>
-                <div class="space-y-1">${rows}</div>
-              </div>`;
-          }).join('');
+        entries.forEach(e => { const m = e.meal||'otros'; if (!byMeal[m]) byMeal[m]=[]; byMeal[m].push(e); });
+        list.innerHTML = MEALS.filter(m => byMeal[m.id]).map(m => {
+          const group = byMeal[m.id];
+          const groupTotal = group.reduce((s,e) => s+e.calories, 0);
+          const rows = group.map(e => `
+            <div class="entry-row flex items-center justify-between px-3 py-2.5 text-sm" style="border-bottom:1px solid #f0ede6;">
+              <div class="flex-1 min-w-0">
+                <div class="truncate font-semibold">${esc(e.name)}</div>
+                ${e.weight ? `<div class="text-xs text-gray-400">${e.weight}g · ${e.kcal100} kcal/100g</div>` : ''}
+              </div>
+              <span class="font-black mx-3 shrink-0">${e.calories} kcal</span>
+              <button class="delete-btn text-red-500 hover:text-red-700 text-base leading-none shrink-0 font-bold"
+                onclick="deleteEntry('${iso}', ${e.id})">✕</button>
+            </div>`).join('');
+          return `
+            <div class="card shadow-hard-sm overflow-hidden">
+              <div class="flex items-center justify-between px-3 py-2" style="background:#0a0a0a;">
+                <span class="text-xs font-black text-white uppercase tracking-widest">${m.label}</span>
+                <span class="text-xs font-black text-white">${groupTotal} kcal</span>
+              </div>
+              ${rows}
+            </div>`;
+        }).join('');
       }
 
       updateDayLabel();
@@ -542,30 +565,29 @@
       const chart = document.getElementById('week-chart');
       chart.innerHTML = '';
       const days = Array.from({ length: 7 }, (_, i) => {
-        const iso = isoDate(-(6 - i));
-        const total = getEntries(iso).reduce((s, e) => s + e.calories, 0);
+        const iso = isoDate(-(6-i));
+        const total = getEntries(iso).reduce((s,e) => s+e.calories, 0);
         return { iso, total };
       });
       const maxVal = Math.max(...days.map(d => d.total), GOAL);
       days.forEach(({ iso, total }) => {
-        const heightPct = total > 0 ? Math.max((total / maxVal) * 100, 4) : 0;
+        const heightPct = total > 0 ? Math.max((total/maxVal)*100, 5) : 3;
         const c = colorFor(total);
         const { main } = friendlyDate(iso);
-        const label = main === 'Hoy' ? 'Hoy' : main === 'Ayer' ? 'Ayer' : main.slice(0, 3);
+        const label = main === 'Hoy' ? 'Hoy' : main === 'Ayer' ? 'Ayer' : main.slice(0,3);
         const isActive = iso === isoDate(offset);
         const col = document.createElement('div');
         col.className = 'flex flex-col items-center flex-1 cursor-pointer group';
         col.onclick = () => {
-          const today = new Date(); today.setHours(0, 0, 0, 0);
-          const [y, m, d] = iso.split('-').map(Number);
-          offset = Math.round((new Date(y, m - 1, d) - today) / 86400000);
+          const today = new Date(); today.setHours(0,0,0,0);
+          const [y,m,d] = iso.split('-').map(Number);
+          offset = Math.round((new Date(y,m-1,d) - today) / 86400000);
           render();
         };
         col.innerHTML = `
-          <div class="text-xs mb-1 transition ${isActive ? 'text-white font-semibold' : 'text-gray-500 group-hover:text-gray-300'}">${total > 0 ? total : ''}</div>
-          <div class="w-full rounded-t-sm transition-all ${isActive ? 'opacity-100' : 'opacity-60 group-hover:opacity-90'}"
-               style="height:${heightPct}%; background:${total > 0 ? c.bar : '#374151'}; min-height:${total > 0 ? '4px' : '2px'}"></div>
-          <div class="text-xs mt-1 ${isActive ? 'text-white font-semibold' : 'text-gray-500'}">${label}</div>`;
+          <div class="text-xs mb-1 font-bold transition ${isActive ? 'text-black' : 'text-gray-400 group-hover:text-gray-600'}">${total > 0 ? total : ''}</div>
+          <div class="w-full transition-all" style="height:${heightPct}%; background:${total > 0 ? c.bar : '#d1cdc7'}; border:${isActive ? '2px solid #0a0a0a' : '1px solid transparent'}; border-radius:3px;"></div>
+          <div class="text-xs mt-1 font-bold ${isActive ? 'text-black' : 'text-gray-400'}">${label}</div>`;
         chart.appendChild(col);
       });
     }
@@ -573,13 +595,9 @@
     // ── Actions ──────────────────────────────────────────────────────────────
     function addEntry(e) {
       e.preventDefault();
-      if (!selectedMeal) {
-        alert('Seleccioná una comida (Desayuno, Almuerzo, etc.)');
-        return;
-      }
+      if (!selectedMeal) { alert('Seleccioná una comida primero.'); return; }
       const iso = isoDate(offset);
       const entries = getEntries(iso);
-
       if (manualMode) {
         const name = document.getElementById('inp-manual-name').value.trim();
         const calories = parseInt(document.getElementById('inp-manual-kcal').value);
@@ -592,8 +610,7 @@
       } else {
         if (!selectedKcal100) {
           document.getElementById('inp-food').setCustomValidity('Seleccioná un alimento de la lista');
-          document.getElementById('inp-food').reportValidity();
-          return;
+          document.getElementById('inp-food').reportValidity(); return;
         }
         document.getElementById('inp-food').setCustomValidity('');
         const name = document.getElementById('inp-food').value.trim();
@@ -605,6 +622,7 @@
         document.getElementById('inp-weight').value = '';
         document.getElementById('kcal-ref').textContent = '';
         document.getElementById('calc-preview').textContent = '— kcal';
+        document.getElementById('calc-preview').style.color = '#9ca3af';
         selectedKcal100 = null;
         document.getElementById('inp-food').focus();
       }
@@ -624,28 +642,6 @@
 
     function esc(s) {
       return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-    }
-
-    // ── Panel ────────────────────────────────────────────────────────────────
-    function openPanel() {
-      document.getElementById('inp-goal').value = GOAL;
-      document.getElementById('goal-display').textContent = GOAL;
-      document.getElementById('goal-saved').classList.add('hidden');
-      document.getElementById('panel').classList.remove('translate-x-full');
-      document.getElementById('panel-overlay').classList.remove('hidden');
-    }
-    function closePanel() {
-      document.getElementById('panel').classList.add('translate-x-full');
-      document.getElementById('panel-overlay').classList.add('hidden');
-    }
-    function saveGoal() {
-      const val = parseInt(document.getElementById('inp-goal').value);
-      if (!val || val < 500) return;
-      GOAL = val;
-      localStorage.setItem('goal', val);
-      document.getElementById('goal-display').textContent = val;
-      document.getElementById('goal-saved').classList.remove('hidden');
-      render();
     }
 
     document.addEventListener('click', e => {
