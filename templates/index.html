@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Contador de Calorías</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .entry-row:hover .delete-btn { opacity: 1; }
+    .bar-segment { transition: height 0.4s ease; }
+  </style>
+</head>
+<body class="bg-gray-950 text-gray-100 min-h-screen flex flex-col items-center py-8 px-4">
+
+  <!-- Header -->
+  <div class="w-full max-w-lg">
+    <h1 class="text-2xl font-bold tracking-tight text-center mb-6">🥗 Calorías</h1>
+
+    <!-- Day navigation -->
+    <div class="flex items-center justify-between mb-4">
+      <button onclick="changeDay(-1)" class="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition text-lg">‹</button>
+      <div class="text-center">
+        <div id="day-label" class="text-lg font-semibold"></div>
+        <div id="day-sub" class="text-xs text-gray-400"></div>
+      </div>
+      <button onclick="changeDay(1)" id="btn-next" class="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition text-lg disabled:opacity-30">›</button>
+    </div>
+
+    <!-- Total ring / badge -->
+    <div class="flex justify-center mb-6">
+      <div id="total-badge" class="flex flex-col items-center justify-center w-36 h-36 rounded-full border-4 transition-colors duration-500">
+        <span id="total-cal" class="text-3xl font-bold">0</span>
+        <span class="text-xs text-gray-400 mt-1">kcal</span>
+        <span id="total-pct" class="text-xs font-semibold mt-1"></span>
+      </div>
+    </div>
+
+    <!-- Add food form -->
+    <form id="add-form" class="flex gap-2 mb-6" onsubmit="addEntry(event)">
+      <input id="inp-name" type="text" placeholder="Alimento…"
+        class="flex-1 bg-gray-800 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" required />
+      <input id="inp-cal" type="number" placeholder="kcal" min="1"
+        class="w-24 bg-gray-800 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" required />
+      <button type="submit"
+        class="bg-indigo-600 hover:bg-indigo-500 transition rounded-lg px-4 py-2 text-sm font-semibold">+</button>
+    </form>
+
+    <!-- Entries list -->
+    <div id="entries-list" class="space-y-2 mb-8"></div>
+
+    <!-- 7-day summary bar chart -->
+    <div class="bg-gray-900 rounded-xl p-4">
+      <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Últimos 7 días</h2>
+      <div id="week-chart" class="flex items-end justify-between gap-1 h-24"></div>
+    </div>
+  </div>
+
+  <script>
+    const GOAL = {{ daily_goal }};
+    let currentOffset = 0; // days from today, 0 = today
+
+    function isoDate(offset = 0) {
+      const d = new Date();
+      d.setDate(d.getDate() + offset);
+      return d.toISOString().slice(0, 10);
+    }
+
+    function friendlyDate(iso) {
+      const [y, m, day] = iso.split('-').map(Number);
+      const d = new Date(y, m - 1, day);
+      const today = new Date(); today.setHours(0,0,0,0);
+      const target = new Date(y, m - 1, day);
+      const diff = Math.round((target - today) / 86400000);
+      const labels = { 0: 'Hoy', '-1': 'Ayer', 1: 'Mañana' };
+      const weekday = d.toLocaleDateString('es-AR', { weekday: 'long' });
+      const full = d.toLocaleDateString('es-AR', { day: 'numeric', month: 'short' });
+      return { main: labels[diff] ?? weekday.charAt(0).toUpperCase() + weekday.slice(1), sub: full };
+    }
+
+    function colorForTotal(total) {
+      const pct = total / GOAL;
+      if (pct < 0.75) return { ring: 'border-emerald-500', text: 'text-emerald-400', bar: '#10b981' };
+      if (pct < 1.0)  return { ring: 'border-yellow-400', text: 'text-yellow-300', bar: '#facc15' };
+      return { ring: 'border-red-500', text: 'text-red-400', bar: '#ef4444' };
+    }
+
+    async function loadEntries() {
+      const date = isoDate(currentOffset);
+      const res = await fetch(`/api/entries?date=${date}`);
+      const entries = await res.json();
+
+      const list = document.getElementById('entries-list');
+      list.innerHTML = '';
+      let total = 0;
+
+      entries.forEach(e => {
+        total += e.calories;
+        const row = document.createElement('div');
+        row.className = 'entry-row flex items-center justify-between bg-gray-800 rounded-lg px-4 py-2 text-sm';
+        row.innerHTML = `
+          <span class="flex-1 truncate">${escHtml(e.name)}</span>
+          <span class="text-gray-300 font-mono mr-3">${e.calories} kcal</span>
+          <button class="delete-btn opacity-0 transition text-red-400 hover:text-red-300 text-base leading-none"
+            onclick="deleteEntry(${e.id})">✕</button>`;
+        list.appendChild(row);
+      });
+
+      if (entries.length === 0) {
+        list.innerHTML = '<p class="text-center text-gray-600 text-sm py-4">Sin entradas para este día.</p>';
+      }
+
+      updateBadge(total);
+    }
+
+    function updateBadge(total) {
+      const pct = Math.round((total / GOAL) * 100);
+      const c = colorForTotal(total);
+      const badge = document.getElementById('total-badge');
+      badge.className = `flex flex-col items-center justify-center w-36 h-36 rounded-full border-4 transition-colors duration-500 ${c.ring}`;
+      document.getElementById('total-cal').textContent = total;
+      document.getElementById('total-pct').className = `text-xs font-semibold mt-1 ${c.text}`;
+      document.getElementById('total-pct').textContent = `${pct}% del objetivo`;
+    }
+
+    async function addEntry(e) {
+      e.preventDefault();
+      const name = document.getElementById('inp-name').value.trim();
+      const calories = parseInt(document.getElementById('inp-cal').value);
+      const date = isoDate(currentOffset);
+      await fetch('/api/entries', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, calories, date }),
+      });
+      document.getElementById('inp-name').value = '';
+      document.getElementById('inp-cal').value = '';
+      document.getElementById('inp-name').focus();
+      await loadEntries();
+      await loadWeekChart();
+    }
+
+    async function deleteEntry(id) {
+      await fetch(`/api/entries/${id}`, { method: 'DELETE' });
+      await loadEntries();
+      await loadWeekChart();
+    }
+
+    function changeDay(delta) {
+      const next = currentOffset + delta;
+      if (next > 0) return; // no futuro
+      currentOffset = next;
+      updateDayLabel();
+      loadEntries();
+    }
+
+    function updateDayLabel() {
+      const iso = isoDate(currentOffset);
+      const { main, sub } = friendlyDate(iso);
+      document.getElementById('day-label').textContent = main;
+      document.getElementById('day-sub').textContent = sub;
+      document.getElementById('btn-next').disabled = currentOffset >= 0;
+    }
+
+    async function loadWeekChart() {
+      const res = await fetch('/api/summary?days=7');
+      const { goal, days } = await res.json();
+      const chart = document.getElementById('week-chart');
+      chart.innerHTML = '';
+      const maxVal = Math.max(...days.map(d => d.total), goal);
+
+      days.forEach(({ date, total }) => {
+        const heightPct = total > 0 ? Math.max((total / maxVal) * 100, 4) : 0;
+        const c = colorForTotal(total);
+        const { main } = friendlyDate(date);
+        const shortLabel = main === 'Hoy' ? 'Hoy' : main === 'Ayer' ? 'Ayer' : main.slice(0, 3);
+        const isActive = date === isoDate(currentOffset);
+
+        const col = document.createElement('div');
+        col.className = `flex flex-col items-center flex-1 cursor-pointer group`;
+        col.onclick = () => {
+          const today = new Date(); today.setHours(0,0,0,0);
+          const [y,m,d] = date.split('-').map(Number);
+          const target = new Date(y, m-1, d);
+          currentOffset = Math.round((target - today) / 86400000);
+          updateDayLabel();
+          loadEntries();
+          loadWeekChart();
+        };
+
+        col.innerHTML = `
+          <div class="text-xs text-gray-500 mb-1 group-hover:text-gray-300 transition ${isActive ? 'text-white font-semibold' : ''}">${total > 0 ? total : ''}</div>
+          <div class="w-full rounded-t-sm bar-segment ${isActive ? 'opacity-100' : 'opacity-60 group-hover:opacity-90'}"
+               style="height:${heightPct}%; background:${total > 0 ? c.bar : '#374151'}; min-height:${total > 0 ? '4px' : '2px'}"></div>
+          <div class="text-xs mt-1 ${isActive ? 'text-white font-semibold' : 'text-gray-500'}">${shortLabel}</div>`;
+        chart.appendChild(col);
+      });
+
+      // goal line overlay (visual only via position trick)
+      const goalPct = (goal / maxVal) * 100;
+      chart.style.position = 'relative';
+    }
+
+    function escHtml(str) {
+      return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    // Init
+    updateDayLabel();
+    loadEntries();
+    loadWeekChart();
+  </script>
+</body>
+</html>
