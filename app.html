@@ -592,17 +592,42 @@
         </button>`).join('');
     }
 
-    function renderUserMealsList() {
+    function renderUserMealsList(editIndex = -1) {
       const list = document.getElementById('user-meals-list');
       if (!list) return;
-      list.innerHTML = userMeals.map((m, i) => `
-        <div class="flex items-center gap-2 bg-white border border-gray-200 rounded px-3 py-1.5 text-sm">
-          <span class="text-base">${m.emoji}</span>
-          <span class="font-medium flex-1">${esc(m.name)}</span>
-          <button onclick="moveMeal(${i},-1)" class="text-gray-400 hover:text-black font-bold px-1 ${i===0?'opacity-20 pointer-events-none':''}">↑</button>
-          <button onclick="moveMeal(${i},1)" class="text-gray-400 hover:text-black font-bold px-1 ${i===userMeals.length-1?'opacity-20 pointer-events-none':''}">↓</button>
-          <button onclick="deleteMeal(${i})" class="text-red-400 hover:text-red-600 font-bold text-base leading-none ml-1">✕</button>
-        </div>`).join('') || '<p class="text-xs text-gray-400">Sin comidas configuradas.</p>';
+      list.innerHTML = userMeals.map((m, i) => {
+        if (i === editIndex) return `
+          <div class="flex items-center gap-2 rounded px-2 py-1.5 text-sm" style="background:#eff6ff;border:1.5px solid #0055ff;">
+            <input id="edit-emoji-${i}" value="${esc(m.emoji)}" class="inp text-center font-bold" style="width:3.2rem;flex-shrink:0;" maxlength="2" />
+            <input id="edit-name-${i}" value="${esc(m.name)}" class="inp flex-1" onkeydown="if(event.key==='Enter')saveMealEdit(${i})" />
+            <button onclick="saveMealEdit(${i})" class="btn-blue rounded px-2 py-1 text-xs">✓</button>
+            <button onclick="renderUserMealsList()" class="btn-ghost rounded px-2 py-1 text-xs">✕</button>
+          </div>`;
+        return `
+          <div class="flex items-center gap-2 bg-white border border-gray-200 rounded px-3 py-1.5 text-sm">
+            <span class="text-base">${m.emoji}</span>
+            <span class="font-medium flex-1">${esc(m.name)}</span>
+            <button onclick="moveMeal(${i},-1)" class="text-gray-400 hover:text-black font-bold px-1 ${i===0?'opacity-20 pointer-events-none':''}">↑</button>
+            <button onclick="moveMeal(${i},1)" class="text-gray-400 hover:text-black font-bold px-1 ${i===userMeals.length-1?'opacity-20 pointer-events-none':''}">↓</button>
+            <button onclick="renderUserMealsList(${i})" class="text-gray-400 hover:text-black font-bold px-1">✏️</button>
+            <button onclick="deleteMeal(${i})" class="text-red-400 hover:text-red-600 font-bold text-base leading-none ml-1">✕</button>
+          </div>`;
+      }).join('') || '<p class="text-xs text-gray-400">Sin comidas configuradas.</p>';
+      if (editIndex >= 0) {
+        const inp = document.getElementById(`edit-name-${editIndex}`);
+        if (inp) inp.focus();
+      }
+    }
+
+    async function saveMealEdit(i) {
+      const emoji = document.getElementById(`edit-emoji-${i}`).value.trim() || '🍽️';
+      const name  = document.getElementById(`edit-name-${i}`).value.trim();
+      if (!name) return;
+      userMeals[i].emoji = emoji;
+      userMeals[i].name  = name;
+      await persistSettings();
+      renderUserMealsList();
+      renderMealButtons();
     }
 
     async function addMeal() {
@@ -619,6 +644,7 @@
     }
 
     async function deleteMeal(i) {
+      if (!confirm(`¿Borrar "${userMeals[i].name}"?\nLas entradas pasadas van a aparecer como "Sin categoría".`)) return;
       userMeals.splice(i, 1);
       await persistSettings();
       renderUserMealsList();
@@ -826,10 +852,10 @@
         const byMeal={};
         entries.forEach(e=>{const m=e.meal||'otros';if(!byMeal[m])byMeal[m]=[];byMeal[m].push(e);});
         const knownIds=new Set(userMeals.map(m=>m.id));
-        const mealLookup=Object.fromEntries(userMeals.map(m=>[m.id,m]));
-        Object.keys(byMeal).forEach(id=>{if(!knownIds.has(id))userMeals.push({id,emoji:'📦',name:id});});
-        list.innerHTML=userMeals.filter(m=>byMeal[m.id]).map(m=>{
-          const group=byMeal[m.id];
+        const orphanEntries=Object.keys(byMeal).filter(id=>!knownIds.has(id)).flatMap(id=>byMeal[id]);
+        const displayMeals=[...userMeals.filter(m=>byMeal[m.id]),...(orphanEntries.length?[{id:'__orphan__',emoji:'📦',name:'Sin categoría',_entries:orphanEntries}]:[])];
+        list.innerHTML=displayMeals.map(m=>{
+          const group=m._entries||byMeal[m.id];
           const gt=group.reduce((s,e)=>s+e.calories,0);
           const rows=group.map(e=>`
             <div class="entry-row flex items-center justify-between px-3 py-2.5 text-sm" style="border-bottom:1px solid #f0ede6;">
