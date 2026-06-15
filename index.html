@@ -71,6 +71,21 @@
 
     <!-- Add form -->
     <form id="add-form" onsubmit="addEntry(event)" autocomplete="off" class="mb-6 space-y-2">
+
+      <!-- Meal selector -->
+      <div class="flex gap-1">
+        <button type="button" onclick="selectMeal('desayuno')" data-meal="desayuno"
+          class="meal-btn flex-1 py-1.5 rounded-lg text-xs font-semibold transition border border-transparent bg-gray-800 text-gray-400">🌅 Desayuno</button>
+        <button type="button" onclick="selectMeal('almuerzo')" data-meal="almuerzo"
+          class="meal-btn flex-1 py-1.5 rounded-lg text-xs font-semibold transition border border-transparent bg-gray-800 text-gray-400">🌞 Almuerzo</button>
+        <button type="button" onclick="selectMeal('merienda')" data-meal="merienda"
+          class="meal-btn flex-1 py-1.5 rounded-lg text-xs font-semibold transition border border-transparent bg-gray-800 text-gray-400">🍎 Merienda</button>
+        <button type="button" onclick="selectMeal('cena')" data-meal="cena"
+          class="meal-btn flex-1 py-1.5 rounded-lg text-xs font-semibold transition border border-transparent bg-gray-800 text-gray-400">🌙 Cena</button>
+        <button type="button" onclick="selectMeal('otros')" data-meal="otros"
+          class="meal-btn flex-1 py-1.5 rounded-lg text-xs font-semibold transition border border-transparent bg-gray-800 text-gray-400">📦 Otros</button>
+      </div>
+
       <!-- Food search -->
       <div class="relative">
         <input id="inp-food" type="text" placeholder="Buscar alimento…"
@@ -223,8 +238,27 @@
     let GOAL = parseInt(localStorage.getItem('goal') || '2000');
     let offset = 0;
     let selectedKcal100 = null;
+    let selectedMeal = null;
     let suggestionIndex = -1;
     let apiDebounce = null;
+
+    const MEALS = [
+      { id: 'desayuno', label: '🌅 Desayuno' },
+      { id: 'almuerzo', label: '🌞 Almuerzo' },
+      { id: 'merienda', label: '🍎 Merienda' },
+      { id: 'cena',     label: '🌙 Cena' },
+      { id: 'otros',    label: '📦 Otros' },
+    ];
+
+    function selectMeal(meal) {
+      selectedMeal = meal;
+      document.querySelectorAll('.meal-btn').forEach(btn => {
+        const active = btn.dataset.meal === meal;
+        btn.className = `meal-btn flex-1 py-1.5 rounded-lg text-xs font-semibold transition border ${
+          active ? 'border-indigo-500 bg-indigo-600/20 text-indigo-300' : 'border-transparent bg-gray-800 text-gray-400'
+        }`;
+      });
+    }
 
     // ── Storage ──────────────────────────────────────────────────────────────
     function getEntries(iso) {
@@ -389,16 +423,36 @@
       if (!entries.length) {
         list.innerHTML = '<p class="text-center text-gray-600 text-sm py-4">Sin entradas para este día.</p>';
       } else {
-        list.innerHTML = entries.map(e => `
-          <div class="entry-row flex items-center justify-between bg-gray-800 rounded-lg px-4 py-2 text-sm">
-            <div class="flex-1 min-w-0">
-              <div class="truncate">${esc(e.name)}</div>
-              ${e.weight ? `<div class="text-xs text-gray-500">${e.weight}g · ${e.kcal100} kcal/100g</div>` : ''}
-            </div>
-            <span class="text-gray-300 font-mono mx-3 shrink-0">${e.calories} kcal</span>
-            <button class="delete-btn text-red-400 hover:text-red-300 text-base leading-none shrink-0"
-              onclick="deleteEntry('${iso}', ${e.id})">✕</button>
-          </div>`).join('');
+        const byMeal = {};
+        entries.forEach(e => {
+          const m = e.meal || 'otros';
+          if (!byMeal[m]) byMeal[m] = [];
+          byMeal[m].push(e);
+        });
+        list.innerHTML = MEALS
+          .filter(m => byMeal[m.id])
+          .map(m => {
+            const group = byMeal[m.id];
+            const groupTotal = group.reduce((s, e) => s + e.calories, 0);
+            const rows = group.map(e => `
+              <div class="entry-row flex items-center justify-between bg-gray-800 rounded-lg px-4 py-2 text-sm">
+                <div class="flex-1 min-w-0">
+                  <div class="truncate">${esc(e.name)}</div>
+                  ${e.weight ? `<div class="text-xs text-gray-500">${e.weight}g · ${e.kcal100} kcal/100g</div>` : ''}
+                </div>
+                <span class="text-gray-300 font-mono mx-3 shrink-0">${e.calories} kcal</span>
+                <button class="delete-btn text-red-400 hover:text-red-300 text-base leading-none shrink-0"
+                  onclick="deleteEntry('${iso}', ${e.id})">✕</button>
+              </div>`).join('');
+            return `
+              <div class="mb-4">
+                <div class="flex items-center justify-between mb-1 px-1">
+                  <span class="text-xs font-semibold text-gray-400 uppercase tracking-widest">${m.label}</span>
+                  <span class="text-xs text-gray-500 font-mono">${groupTotal} kcal</span>
+                </div>
+                <div class="space-y-1">${rows}</div>
+              </div>`;
+          }).join('');
       }
 
       updateDayLabel();
@@ -447,6 +501,10 @@
     // ── Actions ──────────────────────────────────────────────────────────────
     function addEntry(e) {
       e.preventDefault();
+      if (!selectedMeal) {
+        alert('Seleccioná una comida (Desayuno, Almuerzo, etc.)');
+        return;
+      }
       if (!selectedKcal100) {
         document.getElementById('inp-food').setCustomValidity('Seleccioná un alimento de la lista');
         document.getElementById('inp-food').reportValidity();
@@ -458,7 +516,7 @@
       const name = document.getElementById('inp-food').value.trim();
       const weight = parseFloat(document.getElementById('inp-weight').value);
       const calories = Math.round(selectedKcal100 * weight / 100);
-      entries.push({ id: nextId(entries), name, calories, weight, kcal100: selectedKcal100 });
+      entries.push({ id: nextId(entries), name, calories, weight, kcal100: selectedKcal100, meal: selectedMeal });
       saveEntries(iso, entries);
       document.getElementById('inp-food').value = '';
       document.getElementById('inp-weight').value = '';
