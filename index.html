@@ -87,26 +87,48 @@
       </div>
 
       <!-- Food search -->
-      <div class="relative">
+      <div id="mode-search" class="relative">
         <input id="inp-food" type="text" placeholder="Buscar alimento…"
           class="w-full bg-gray-800 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          oninput="onFoodInput()" onkeydown="onFoodKey(event)" required />
+          oninput="onFoodInput()" onkeydown="onFoodKey(event)" />
         <div id="suggestions"
           class="absolute z-20 w-full bg-gray-800 border border-gray-700 rounded-lg mt-1 shadow-xl overflow-y-auto max-h-52 hidden"></div>
       </div>
 
-      <!-- Weight + preview + add -->
-      <div class="flex gap-2">
+      <!-- Manual name (hidden by default) -->
+      <div id="mode-manual" class="hidden">
+        <input id="inp-manual-name" type="text" placeholder="Nombre del alimento"
+          class="w-full bg-gray-800 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+      </div>
+
+      <!-- Toggle -->
+      <div class="text-right">
+        <button type="button" id="toggle-mode-btn" onclick="toggleManualMode()"
+          class="text-xs text-gray-500 hover:text-gray-300 transition underline underline-offset-2">
+          No está en la lista → ingresar manual
+        </button>
+      </div>
+
+      <!-- Weight + preview + add (modo búsqueda) -->
+      <div id="row-weight" class="flex gap-2">
         <div class="relative flex-1">
           <input id="inp-weight" type="number" placeholder="Gramos" min="1"
             class="w-full bg-gray-800 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 pr-20"
-            oninput="updatePreview()" required />
+            oninput="updatePreview()" />
           <span id="kcal-ref" class="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-500 pointer-events-none"></span>
         </div>
         <div id="calc-preview"
           class="w-24 flex items-center justify-center bg-gray-900 rounded-lg text-sm font-mono text-gray-400">— kcal</div>
         <button type="submit"
           class="bg-indigo-600 hover:bg-indigo-500 transition rounded-lg px-4 py-2 text-sm font-semibold">+</button>
+      </div>
+
+      <!-- Manual kcal row (hidden by default) -->
+      <div id="row-manual-kcal" class="hidden flex gap-2">
+        <input id="inp-manual-kcal" type="number" placeholder="Calorías totales (kcal)" min="1"
+          class="flex-1 bg-gray-800 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+        <button type="submit"
+          class="bg-amber-600 hover:bg-amber-500 transition rounded-lg px-4 py-2 text-sm font-semibold">+</button>
       </div>
     </form>
 
@@ -275,6 +297,7 @@
     let selectedMeal = null;
     let suggestionIndex = -1;
     let apiDebounce = null;
+    let manualMode = false;
 
     const MEALS = [
       { id: 'desayuno', label: '🌅 Desayuno' },
@@ -283,6 +306,21 @@
       { id: 'cena',     label: '🌙 Cena' },
       { id: 'otros',    label: '📦 Otros' },
     ];
+
+    function toggleManualMode() {
+      manualMode = !manualMode;
+      document.getElementById('mode-search').classList.toggle('hidden', manualMode);
+      document.getElementById('mode-manual').classList.toggle('hidden', !manualMode);
+      document.getElementById('row-weight').classList.toggle('hidden', manualMode);
+      document.getElementById('row-manual-kcal').classList.toggle('hidden', !manualMode);
+      document.getElementById('toggle-mode-btn').textContent = manualMode
+        ? '← Volver a búsqueda'
+        : 'No está en la lista → ingresar manual';
+      selectedKcal100 = null;
+      hideSuggestions();
+      if (manualMode) document.getElementById('inp-manual-name').focus();
+      else document.getElementById('inp-food').focus();
+    }
 
     function selectMeal(meal) {
       selectedMeal = meal;
@@ -539,25 +577,37 @@
         alert('Seleccioná una comida (Desayuno, Almuerzo, etc.)');
         return;
       }
-      if (!selectedKcal100) {
-        document.getElementById('inp-food').setCustomValidity('Seleccioná un alimento de la lista');
-        document.getElementById('inp-food').reportValidity();
-        return;
-      }
-      document.getElementById('inp-food').setCustomValidity('');
       const iso = isoDate(offset);
       const entries = getEntries(iso);
-      const name = document.getElementById('inp-food').value.trim();
-      const weight = parseFloat(document.getElementById('inp-weight').value);
-      const calories = Math.round(selectedKcal100 * weight / 100);
-      entries.push({ id: nextId(entries), name, calories, weight, kcal100: selectedKcal100, meal: selectedMeal });
-      saveEntries(iso, entries);
-      document.getElementById('inp-food').value = '';
-      document.getElementById('inp-weight').value = '';
-      document.getElementById('kcal-ref').textContent = '';
-      document.getElementById('calc-preview').textContent = '— kcal';
-      selectedKcal100 = null;
-      document.getElementById('inp-food').focus();
+
+      if (manualMode) {
+        const name = document.getElementById('inp-manual-name').value.trim();
+        const calories = parseInt(document.getElementById('inp-manual-kcal').value);
+        if (!name || !calories || calories <= 0) return;
+        entries.push({ id: nextId(entries), name, calories, meal: selectedMeal });
+        saveEntries(iso, entries);
+        document.getElementById('inp-manual-name').value = '';
+        document.getElementById('inp-manual-kcal').value = '';
+        document.getElementById('inp-manual-name').focus();
+      } else {
+        if (!selectedKcal100) {
+          document.getElementById('inp-food').setCustomValidity('Seleccioná un alimento de la lista');
+          document.getElementById('inp-food').reportValidity();
+          return;
+        }
+        document.getElementById('inp-food').setCustomValidity('');
+        const name = document.getElementById('inp-food').value.trim();
+        const weight = parseFloat(document.getElementById('inp-weight').value);
+        const calories = Math.round(selectedKcal100 * weight / 100);
+        entries.push({ id: nextId(entries), name, calories, weight, kcal100: selectedKcal100, meal: selectedMeal });
+        saveEntries(iso, entries);
+        document.getElementById('inp-food').value = '';
+        document.getElementById('inp-weight').value = '';
+        document.getElementById('kcal-ref').textContent = '';
+        document.getElementById('calc-preview').textContent = '— kcal';
+        selectedKcal100 = null;
+        document.getElementById('inp-food').focus();
+      }
       render();
     }
 
