@@ -8,6 +8,7 @@
   <style>
     .entry-row .delete-btn { opacity: 0; transition: opacity 0.15s; }
     .entry-row:hover .delete-btn { opacity: 1; }
+    #suggestions:empty { display: none; }
   </style>
 </head>
 <body class="bg-gray-950 text-gray-100 min-h-screen flex flex-col items-center py-8 px-4">
@@ -35,13 +36,29 @@
     </div>
 
     <!-- Add form -->
-    <form id="add-form" class="flex gap-2 mb-6" onsubmit="addEntry(event)">
-      <input id="inp-name" type="text" placeholder="Alimento…"
-        class="flex-1 bg-gray-800 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" required autocomplete="off" />
-      <input id="inp-cal" type="number" placeholder="kcal" min="1"
-        class="w-24 bg-gray-800 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" required />
-      <button type="submit"
-        class="bg-indigo-600 hover:bg-indigo-500 transition rounded-lg px-4 py-2 text-sm font-semibold">+</button>
+    <form id="add-form" onsubmit="addEntry(event)" autocomplete="off" class="mb-6 space-y-2">
+      <!-- Food search -->
+      <div class="relative">
+        <input id="inp-food" type="text" placeholder="Buscar alimento…"
+          class="w-full bg-gray-800 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          oninput="onFoodInput()" onkeydown="onFoodKey(event)" required />
+        <div id="suggestions"
+          class="absolute z-20 w-full bg-gray-800 border border-gray-700 rounded-lg mt-1 shadow-xl overflow-y-auto max-h-52 hidden"></div>
+      </div>
+
+      <!-- Weight + preview + add -->
+      <div class="flex gap-2">
+        <div class="relative flex-1">
+          <input id="inp-weight" type="number" placeholder="Gramos" min="1"
+            class="w-full bg-gray-800 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 pr-20"
+            oninput="updatePreview()" required />
+          <span id="kcal-ref" class="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-500 pointer-events-none"></span>
+        </div>
+        <div id="calc-preview"
+          class="w-24 flex items-center justify-center bg-gray-900 rounded-lg text-sm font-mono text-gray-400">— kcal</div>
+        <button type="submit"
+          class="bg-indigo-600 hover:bg-indigo-500 transition rounded-lg px-4 py-2 text-sm font-semibold">+</button>
+      </div>
     </form>
 
     <!-- Entries list -->
@@ -55,21 +72,134 @@
   </div>
 
   <script>
+    // ── Food database (kcal per 100g) ────────────────────────────────────────
+    const FOODS = [
+      // Carnes
+      { n: 'Pechuga de pollo', k: 165 },
+      { n: 'Muslo de pollo', k: 209 },
+      { n: 'Carne vacuna magra', k: 250 },
+      { n: 'Carne vacuna grasa', k: 332 },
+      { n: 'Bife de lomo', k: 219 },
+      { n: 'Asado de tira', k: 289 },
+      { n: 'Cerdo magro', k: 242 },
+      { n: 'Chorizo', k: 350 },
+      { n: 'Salchicha', k: 290 },
+      { n: 'Jamón cocido', k: 145 },
+      { n: 'Jamón crudo', k: 250 },
+      { n: 'Morcilla', k: 379 },
+      // Pescados
+      { n: 'Merluza', k: 82 },
+      { n: 'Salmón', k: 208 },
+      { n: 'Atún en lata', k: 116 },
+      { n: 'Sardinas en lata', k: 208 },
+      { n: 'Langostinos', k: 85 },
+      // Huevos y lácteos
+      { n: 'Huevo entero', k: 143 },
+      { n: 'Clara de huevo', k: 52 },
+      { n: 'Yema de huevo', k: 322 },
+      { n: 'Leche entera', k: 61 },
+      { n: 'Leche descremada', k: 35 },
+      { n: 'Yogur natural', k: 59 },
+      { n: 'Yogur griego', k: 100 },
+      { n: 'Queso cremoso', k: 300 },
+      { n: 'Queso tybo', k: 360 },
+      { n: 'Queso rallado', k: 420 },
+      { n: 'Ricota', k: 174 },
+      { n: 'Manteca', k: 717 },
+      { n: 'Crema de leche', k: 340 },
+      // Cereales y harinas
+      { n: 'Arroz cocido', k: 130 },
+      { n: 'Arroz crudo', k: 350 },
+      { n: 'Pasta cocida', k: 131 },
+      { n: 'Pasta cruda', k: 350 },
+      { n: 'Pan blanco', k: 265 },
+      { n: 'Pan integral', k: 247 },
+      { n: 'Pan de molde', k: 280 },
+      { n: 'Avena', k: 389 },
+      { n: 'Harina de trigo', k: 364 },
+      { n: 'Polenta', k: 362 },
+      { n: 'Granola', k: 471 },
+      { n: 'Medialunas', k: 406 },
+      { n: 'Galletitas de agua', k: 421 },
+      { n: 'Galletitas dulces', k: 480 },
+      // Verduras
+      { n: 'Lechuga', k: 15 },
+      { n: 'Tomate', k: 18 },
+      { n: 'Zanahoria', k: 41 },
+      { n: 'Brócoli', k: 34 },
+      { n: 'Espinaca', k: 23 },
+      { n: 'Zapallito', k: 17 },
+      { n: 'Cebolla', k: 40 },
+      { n: 'Ajo', k: 149 },
+      { n: 'Papa cocida', k: 87 },
+      { n: 'Papa frita', k: 312 },
+      { n: 'Batata cocida', k: 90 },
+      { n: 'Choclo', k: 86 },
+      { n: 'Berenjena', k: 25 },
+      { n: 'Pimiento', k: 31 },
+      { n: 'Pepino', k: 15 },
+      { n: 'Acelga', k: 19 },
+      { n: 'Apio', k: 16 },
+      { n: 'Champiñones', k: 22 },
+      // Frutas
+      { n: 'Banana', k: 89 },
+      { n: 'Manzana', k: 52 },
+      { n: 'Naranja', k: 47 },
+      { n: 'Pera', k: 57 },
+      { n: 'Uva', k: 67 },
+      { n: 'Frutilla', k: 32 },
+      { n: 'Sandía', k: 30 },
+      { n: 'Melón', k: 34 },
+      { n: 'Durazno', k: 39 },
+      { n: 'Kiwi', k: 61 },
+      { n: 'Mandarina', k: 53 },
+      { n: 'Limón', k: 29 },
+      // Legumbres
+      { n: 'Lentejas cocidas', k: 116 },
+      { n: 'Garbanzos cocidos', k: 164 },
+      { n: 'Poroto negro cocido', k: 132 },
+      { n: 'Soja cocida', k: 173 },
+      // Aceites y grasas
+      { n: 'Aceite de oliva', k: 884 },
+      { n: 'Aceite de girasol', k: 884 },
+      { n: 'Mayonesa', k: 680 },
+      // Frutos secos
+      { n: 'Almendras', k: 579 },
+      { n: 'Nueces', k: 654 },
+      { n: 'Maní', k: 567 },
+      { n: 'Castañas de cajú', k: 553 },
+      // Dulces y snacks
+      { n: 'Azúcar', k: 387 },
+      { n: 'Miel', k: 304 },
+      { n: 'Mermelada', k: 250 },
+      { n: 'Dulce de leche', k: 327 },
+      { n: 'Chocolate negro', k: 546 },
+      { n: 'Chocolate con leche', k: 535 },
+      { n: 'Alfajor', k: 450 },
+      { n: 'Papas fritas (snack)', k: 536 },
+      { n: 'Helado crema', k: 207 },
+      // Bebidas
+      { n: 'Jugo de naranja', k: 45 },
+      { n: 'Coca-Cola', k: 37 },
+      { n: 'Cerveza', k: 43 },
+      { n: 'Vino tinto', k: 85 },
+      { n: 'Vino blanco', k: 82 },
+    ];
+
     const GOAL = 2000;
-    let offset = 0; // days from today
+    let offset = 0;
+    let selectedKcal100 = null;
+    let suggestionIndex = -1;
+    let apiDebounce = null;
 
-    // ── Storage helpers ──────────────────────────────────────────────────────
-    function storageKey(iso) { return `cal_${iso}`; }
-
+    // ── Storage ──────────────────────────────────────────────────────────────
     function getEntries(iso) {
-      try { return JSON.parse(localStorage.getItem(storageKey(iso)) || '[]'); }
+      try { return JSON.parse(localStorage.getItem(`cal_${iso}`) || '[]'); }
       catch { return []; }
     }
-
     function saveEntries(iso, entries) {
-      localStorage.setItem(storageKey(iso), JSON.stringify(entries));
+      localStorage.setItem(`cal_${iso}`, JSON.stringify(entries));
     }
-
     function nextId(entries) {
       return entries.length ? Math.max(...entries.map(e => e.id)) + 1 : 1;
     }
@@ -80,7 +210,6 @@
       d.setDate(d.getDate() + off);
       return d.toISOString().slice(0, 10);
     }
-
     function friendlyDate(iso) {
       const [y, m, day] = iso.split('-').map(Number);
       const today = new Date(); today.setHours(0, 0, 0, 0);
@@ -92,12 +221,119 @@
       const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
       return { main: special[diff] ?? cap(weekday), sub: full };
     }
-
     function colorFor(total) {
       const pct = total / GOAL;
       if (pct < 0.75) return { ring: 'border-emerald-500', text: 'text-emerald-400', bar: '#10b981' };
       if (pct < 1.00) return { ring: 'border-yellow-400', text: 'text-yellow-300', bar: '#facc15' };
       return { ring: 'border-red-500', text: 'text-red-400', bar: '#ef4444' };
+    }
+
+    // ── Autocomplete ─────────────────────────────────────────────────────────
+    function onFoodInput() {
+      selectedKcal100 = null;
+      document.getElementById('kcal-ref').textContent = '';
+      document.getElementById('calc-preview').textContent = '— kcal';
+      const q = document.getElementById('inp-food').value.trim().toLowerCase();
+      if (!q) { hideSuggestions(); return; }
+
+      const local = FOODS.filter(f => normalize(f.n).includes(normalize(q))).slice(0, 6);
+      showSuggestions(local, []);
+
+      clearTimeout(apiDebounce);
+      if (q.length >= 3) {
+        apiDebounce = setTimeout(() => fetchOpenFoodFacts(q, local), 500);
+      }
+    }
+
+    function normalize(s) {
+      return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+    }
+
+    async function fetchOpenFoodFacts(q, alreadyShown) {
+      try {
+        const url = `https://world.openfoodfacts.org/cgi/search.pl?action=process&search_terms=${encodeURIComponent(q)}&fields=product_name,nutriments&json=1&page_size=8&lc=es`;
+        const res = await fetch(url);
+        const data = await res.json();
+        const apiResults = (data.products || [])
+          .filter(p => p.product_name && p.nutriments?.['energy-kcal_100g'])
+          .map(p => ({ n: p.product_name, k: Math.round(p.nutriments['energy-kcal_100g']) }))
+          .filter(p => !alreadyShown.some(a => normalize(a.n) === normalize(p.n)))
+          .slice(0, 5);
+        const currentQ = document.getElementById('inp-food').value.trim().toLowerCase();
+        if (normalize(currentQ) === normalize(q)) {
+          showSuggestions(alreadyShown, apiResults);
+        }
+      } catch { /* sin internet: solo local */ }
+    }
+
+    function showSuggestions(local, api) {
+      const box = document.getElementById('suggestions');
+      const all = [
+        ...local.map(f => ({ ...f, source: 'local' })),
+        ...api.map(f => ({ ...f, source: 'api' })),
+      ];
+      if (!all.length) { hideSuggestions(); return; }
+      suggestionIndex = -1;
+      box.innerHTML = all.map((f, i) => `
+        <div class="suggestion-item px-3 py-2 text-sm cursor-pointer hover:bg-gray-700 flex justify-between items-center"
+             data-kcal="${f.k}" data-name="${esc(f.n)}"
+             onmousedown="selectFood('${esc(f.n)}', ${f.k})">
+          <span>${esc(f.n)}</span>
+          <span class="text-gray-400 text-xs ml-2 shrink-0">${f.k} kcal/100g</span>
+        </div>`).join('');
+      box.classList.remove('hidden');
+    }
+
+    function hideSuggestions() {
+      document.getElementById('suggestions').classList.add('hidden');
+      suggestionIndex = -1;
+    }
+
+    function selectFood(name, kcal100) {
+      document.getElementById('inp-food').value = name;
+      selectedKcal100 = kcal100;
+      document.getElementById('kcal-ref').textContent = `${kcal100}/100g`;
+      hideSuggestions();
+      updatePreview();
+      document.getElementById('inp-weight').focus();
+    }
+
+    function onFoodKey(e) {
+      const items = document.querySelectorAll('.suggestion-item');
+      if (!items.length) return;
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        suggestionIndex = Math.min(suggestionIndex + 1, items.length - 1);
+        highlightSuggestion(items);
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        suggestionIndex = Math.max(suggestionIndex - 1, 0);
+        highlightSuggestion(items);
+      } else if (e.key === 'Enter' && suggestionIndex >= 0) {
+        e.preventDefault();
+        const item = items[suggestionIndex];
+        selectFood(item.dataset.name, parseInt(item.dataset.kcal));
+      } else if (e.key === 'Escape') {
+        hideSuggestions();
+      }
+    }
+
+    function highlightSuggestion(items) {
+      items.forEach((el, i) => el.classList.toggle('bg-gray-700', i === suggestionIndex));
+    }
+
+    // ── Calorie preview ──────────────────────────────────────────────────────
+    function updatePreview() {
+      const weight = parseFloat(document.getElementById('inp-weight').value);
+      const preview = document.getElementById('calc-preview');
+      if (selectedKcal100 && weight > 0) {
+        const cal = Math.round(selectedKcal100 * weight / 100);
+        preview.textContent = `${cal} kcal`;
+        preview.className = 'w-24 flex items-center justify-center bg-gray-900 rounded-lg text-sm font-mono text-indigo-300 font-semibold';
+      } else {
+        preview.textContent = '— kcal';
+        preview.className = 'w-24 flex items-center justify-center bg-gray-900 rounded-lg text-sm font-mono text-gray-400';
+      }
     }
 
     // ── Render ───────────────────────────────────────────────────────────────
@@ -106,7 +342,6 @@
       const entries = getEntries(iso);
       const total = entries.reduce((s, e) => s + e.calories, 0);
 
-      // Badge
       const pct = Math.round((total / GOAL) * 100);
       const c = colorFor(total);
       const badge = document.getElementById('total-badge');
@@ -116,21 +351,22 @@
       pctEl.className = `text-xs font-semibold mt-1 ${total > 0 ? c.text : 'text-gray-500'}`;
       pctEl.textContent = `${pct}% del objetivo`;
 
-      // List
       const list = document.getElementById('entries-list');
-      if (entries.length === 0) {
+      if (!entries.length) {
         list.innerHTML = '<p class="text-center text-gray-600 text-sm py-4">Sin entradas para este día.</p>';
       } else {
         list.innerHTML = entries.map(e => `
           <div class="entry-row flex items-center justify-between bg-gray-800 rounded-lg px-4 py-2 text-sm">
-            <span class="flex-1 truncate">${esc(e.name)}</span>
-            <span class="text-gray-300 font-mono mr-3">${e.calories} kcal</span>
-            <button class="delete-btn text-red-400 hover:text-red-300 text-base leading-none"
+            <div class="flex-1 min-w-0">
+              <div class="truncate">${esc(e.name)}</div>
+              ${e.weight ? `<div class="text-xs text-gray-500">${e.weight}g · ${e.kcal100} kcal/100g</div>` : ''}
+            </div>
+            <span class="text-gray-300 font-mono mx-3 shrink-0">${e.calories} kcal</span>
+            <button class="delete-btn text-red-400 hover:text-red-300 text-base leading-none shrink-0"
               onclick="deleteEntry('${iso}', ${e.id})">✕</button>
           </div>`).join('');
       }
 
-      // Day label
       updateDayLabel();
       renderChart();
     }
@@ -151,14 +387,12 @@
         return { iso, total };
       });
       const maxVal = Math.max(...days.map(d => d.total), GOAL);
-
       days.forEach(({ iso, total }) => {
         const heightPct = total > 0 ? Math.max((total / maxVal) * 100, 4) : 0;
         const c = colorFor(total);
         const { main } = friendlyDate(iso);
         const label = main === 'Hoy' ? 'Hoy' : main === 'Ayer' ? 'Ayer' : main.slice(0, 3);
         const isActive = iso === isoDate(offset);
-
         const col = document.createElement('div');
         col.className = 'flex flex-col items-center flex-1 cursor-pointer group';
         col.onclick = () => {
@@ -179,23 +413,30 @@
     // ── Actions ──────────────────────────────────────────────────────────────
     function addEntry(e) {
       e.preventDefault();
+      if (!selectedKcal100) {
+        document.getElementById('inp-food').setCustomValidity('Seleccioná un alimento de la lista');
+        document.getElementById('inp-food').reportValidity();
+        return;
+      }
+      document.getElementById('inp-food').setCustomValidity('');
       const iso = isoDate(offset);
       const entries = getEntries(iso);
-      entries.push({
-        id: nextId(entries),
-        name: document.getElementById('inp-name').value.trim(),
-        calories: parseInt(document.getElementById('inp-cal').value),
-      });
+      const name = document.getElementById('inp-food').value.trim();
+      const weight = parseFloat(document.getElementById('inp-weight').value);
+      const calories = Math.round(selectedKcal100 * weight / 100);
+      entries.push({ id: nextId(entries), name, calories, weight, kcal100: selectedKcal100 });
       saveEntries(iso, entries);
-      document.getElementById('inp-name').value = '';
-      document.getElementById('inp-cal').value = '';
-      document.getElementById('inp-name').focus();
+      document.getElementById('inp-food').value = '';
+      document.getElementById('inp-weight').value = '';
+      document.getElementById('kcal-ref').textContent = '';
+      document.getElementById('calc-preview').textContent = '— kcal';
+      selectedKcal100 = null;
+      document.getElementById('inp-food').focus();
       render();
     }
 
     function deleteEntry(iso, id) {
-      const entries = getEntries(iso).filter(e => e.id !== id);
-      saveEntries(iso, entries);
+      saveEntries(iso, getEntries(iso).filter(e => e.id !== id));
       render();
     }
 
@@ -206,10 +447,13 @@
     }
 
     function esc(s) {
-      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     }
 
-    // ── Init ─────────────────────────────────────────────────────────────────
+    document.addEventListener('click', e => {
+      if (!e.target.closest('#inp-food') && !e.target.closest('#suggestions')) hideSuggestions();
+    });
+
     render();
   </script>
 </body>
