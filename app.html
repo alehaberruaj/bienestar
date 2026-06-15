@@ -182,11 +182,10 @@
       <!-- Day nav -->
       <div class="flex items-center justify-between mb-6">
         <button onclick="changeDay(-1)" class="btn-ghost w-12 h-12 flex items-center justify-center rounded-md text-2xl font-black">‹</button>
-        <div class="text-center flex-1">
+        <button onclick="openDatePicker()" class="text-center flex-1 hover:opacity-60 transition-opacity" title="Ir a fecha">
           <div id="day-label" class="text-xl font-black"></div>
           <div id="day-sub" class="text-sm text-gray-500 font-medium"></div>
-        </div>
-        <button onclick="openDatePicker()" class="btn-ghost w-10 h-10 flex items-center justify-center rounded-md text-base mr-1" title="Ir a fecha">📅</button>
+        </button>
         <input type="date" id="date-picker" class="sr-only" onchange="goToDate(this.value)" />
         <button onclick="changeDay(1)" id="btn-next" class="btn-ghost w-12 h-12 flex items-center justify-center rounded-md text-2xl font-black disabled:opacity-30 disabled:cursor-not-allowed disabled:shadow-none">›</button>
       </div>
@@ -254,11 +253,10 @@
       <!-- Day nav peso -->
       <div class="flex items-center justify-between mb-6">
         <button onclick="changeDay(-1); loadWeightDay()" class="btn-ghost w-12 h-12 flex items-center justify-center rounded-md text-2xl font-black">‹</button>
-        <div class="text-center flex-1">
+        <button onclick="openDatePicker()" class="text-center flex-1 hover:opacity-60 transition-opacity" title="Ir a fecha">
           <div id="peso-day-label" class="text-xl font-black"></div>
           <div id="peso-day-sub" class="text-sm text-gray-500 font-medium"></div>
-        </div>
-        <button onclick="openDatePicker()" class="btn-ghost w-10 h-10 flex items-center justify-center rounded-md text-base mr-1" title="Ir a fecha">📅</button>
+        </button>
         <button onclick="changeDay(1); loadWeightDay()" id="peso-btn-next" class="btn-ghost w-12 h-12 flex items-center justify-center rounded-md text-2xl font-black disabled:opacity-30 disabled:cursor-not-allowed disabled:shadow-none">›</button>
       </div>
 
