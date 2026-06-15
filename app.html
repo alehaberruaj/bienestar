@@ -29,8 +29,7 @@
     .inp { background: #fff; border: 2px solid #0a0a0a; border-radius: 6px; padding: 0.6rem 0.75rem; font-size: 0.875rem; width: 100%; outline: none; transition: box-shadow 0.1s; }
     .inp:focus { box-shadow: 3px 3px 0 #0055ff; }
     .card { background: #fff; border: 2px solid #0a0a0a; border-radius: 8px; }
-    .country-btn { background: #fff; border: 2px solid #ccc; border-radius: 8px; transition: all 0.1s; cursor: pointer; color: #0a0a0a; }
-    .country-btn.active { border-color: #0a0a0a; box-shadow: 2px 2px 0 #0a0a0a; background: #0a0a0a; color: #fff; }
+    select.inp { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%230a0a0a' stroke-width='2' fill='none'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 0.75rem center; padding-right: 2rem; cursor: pointer; }
   </style>
 </head>
 <body class="min-h-screen flex flex-col items-center py-8 px-4">
@@ -38,16 +37,37 @@
   <!-- ── Auth screen ──────────────────────────────────────────────────────── -->
   <div id="auth-screen" class="hidden w-full max-w-sm">
     <h1 class="text-3xl font-black tracking-tight text-center mb-8">Calorías</h1>
-    <div class="card shadow-hard p-6 space-y-4">
+
+    <!-- Login -->
+    <div id="login-form" class="card shadow-hard p-6 space-y-4">
       <h2 class="text-lg font-black">Acceder</h2>
       <input id="inp-email" type="email" placeholder="Email" class="inp" />
       <input id="inp-password" type="password" placeholder="Contraseña" class="inp" onkeydown="if(event.key==='Enter') login()" />
       <p id="auth-error" class="text-sm font-bold text-red-600 hidden"></p>
-      <p id="auth-info" class="text-sm font-bold text-green-700 hidden"></p>
-      <div class="flex gap-2 pt-1">
-        <button onclick="login()" class="btn-blue flex-1 rounded-md py-2.5 text-sm">Entrar</button>
-        <button onclick="signup()" class="btn-ghost flex-1 rounded-md py-2.5 text-sm">Registrarse</button>
+      <button onclick="login()" class="btn-blue w-full rounded-md py-2.5 text-sm">Entrar</button>
+      <p class="text-center text-sm text-gray-500 font-medium">¿No tenés cuenta? <button onclick="showSignup()" class="font-black text-black underline">Registrarse</button></p>
+    </div>
+
+    <!-- Signup -->
+    <div id="signup-form" class="card shadow-hard p-6 space-y-3 hidden">
+      <h2 class="text-lg font-black">Crear cuenta</h2>
+      <div class="flex gap-2">
+        <input id="inp-firstname" type="text" placeholder="Nombre" class="inp" />
+        <input id="inp-lastname" type="text" placeholder="Apellido" class="inp" />
       </div>
+      <input id="inp-signup-email" type="email" placeholder="Email" class="inp" />
+      <select id="inp-signup-country" class="inp">
+        <option value="">¿Desde dónde vas a usarlo?</option>
+        <option value="ar">🇦🇷 Argentina</option>
+        <option value="il">🇮🇱 Israel</option>
+        <option value="us">🇺🇸 Estados Unidos</option>
+        <option value="world">🌍 Internacional (global)</option>
+      </select>
+      <input id="inp-signup-password" type="password" placeholder="Contraseña" class="inp" />
+      <p id="auth-error-signup" class="text-sm font-bold text-red-600 hidden"></p>
+      <p id="auth-info-signup" class="text-sm font-bold text-green-700 hidden"></p>
+      <button onclick="signup()" class="btn-blue w-full rounded-md py-2.5 text-sm">Crear cuenta</button>
+      <p class="text-center text-sm text-gray-500 font-medium">¿Ya tenés cuenta? <button onclick="showLogin()" class="font-black text-black underline">Acceder</button></p>
     </div>
   </div>
 
@@ -105,23 +125,6 @@
           <p class="text-xs text-gray-500 mt-1">Actual: <span id="goal-display" class="font-bold text-black"></span> kcal/día</p>
         </div>
 
-        <!-- País / API -->
-        <div>
-          <label class="block text-xs font-black uppercase tracking-widest mb-2">País / Búsqueda</label>
-          <div class="grid grid-cols-2 gap-2 mb-2">
-            <button onclick="setCountry('ar')" data-country="ar" class="country-btn px-3 py-2.5 text-sm font-bold text-left">🇦🇷 Argentina</button>
-            <button onclick="setCountry('il')" data-country="il" class="country-btn px-3 py-2.5 text-sm font-bold text-left">🇮🇱 Israel</button>
-            <button onclick="setCountry('us')" data-country="us" class="country-btn px-3 py-2.5 text-sm font-bold text-left">🇺🇸 USA</button>
-            <button onclick="setCountry('world')" data-country="world" class="country-btn px-3 py-2.5 text-sm font-bold text-left">🌍 Global</button>
-          </div>
-          <button onclick="setCountry('custom')" data-country="custom" class="country-btn w-full px-3 py-2.5 text-sm font-bold text-left mb-2">🔧 URL personalizada</button>
-          <div id="custom-api-row" class="hidden flex gap-2">
-            <input id="inp-custom-api" type="url" placeholder="https://..." class="inp flex-1 text-xs" />
-            <button onclick="saveCustomApi()" class="btn-blue rounded-md px-3 py-2 text-sm">OK</button>
-          </div>
-          <p id="country-saved" class="text-xs font-bold text-green-700 mt-1 hidden">✓ Guardado</p>
-        </div>
-
         <!-- Mis alimentos -->
         <div>
           <label class="block text-xs font-black uppercase tracking-widest mb-2">Mis alimentos</label>
@@ -133,6 +136,27 @@
               <button onclick="addCustomFood()" class="btn-blue rounded-md px-4 py-2 text-sm font-bold">+ Agregar</button>
             </div>
           </div>
+        </div>
+
+        <!-- País / Búsqueda (discreto, al final) -->
+        <div style="border-top:1px solid #e5e0d8; padding-top:1rem;">
+          <label class="block text-xs font-black uppercase tracking-widest mb-2 text-gray-400">País / Búsqueda</label>
+          <div class="flex gap-2">
+            <select id="sel-country" class="inp flex-1 text-sm">
+              <option value="ar">🇦🇷 Argentina</option>
+              <option value="il">🇮🇱 Israel</option>
+              <option value="us">🇺🇸 Estados Unidos</option>
+              <option value="world">🌍 Global</option>
+              <option value="custom">🔧 URL personalizada</option>
+            </select>
+            <button onclick="saveCountry()" class="btn-ghost rounded-md px-3 py-2 text-sm">Guardar</button>
+          </div>
+          <div id="custom-api-row" class="hidden mt-2 flex gap-2">
+            <input id="inp-custom-api" type="url" placeholder="https://..." class="inp flex-1 text-xs" />
+            <button onclick="saveCustomApi()" class="btn-blue rounded-md px-3 py-2 text-sm">OK</button>
+          </div>
+          <p id="country-saved" class="text-xs font-bold text-green-700 mt-1 hidden">✓ Guardado</p>
+          <p class="text-xs text-gray-400 mt-1">Si los resultados de tu país no son buenos, elegí Global.</p>
         </div>
 
         <!-- Cuenta -->
@@ -318,7 +342,6 @@
       await sb.from('user_settings').upsert({ user_id: currentUser.id, country, updated_at: new Date().toISOString() });
       showScreen('app');
       document.getElementById('user-email').textContent = currentUser.email;
-      refreshCountryButtons();
       render();
     }
 
@@ -327,30 +350,59 @@
         document.getElementById(s+'-screen').classList.toggle('hidden', s !== name));
     }
 
+    function showLogin() {
+      document.getElementById('login-form').classList.remove('hidden');
+      document.getElementById('signup-form').classList.add('hidden');
+    }
+    function showSignup() {
+      document.getElementById('signup-form').classList.remove('hidden');
+      document.getElementById('login-form').classList.add('hidden');
+    }
+
     async function login() {
       const email = document.getElementById('inp-email').value.trim();
       const password = document.getElementById('inp-password').value;
-      setAuthMsg('');
+      setAuthMsg('', 'login');
       const { error } = await sb.auth.signInWithPassword({ email, password });
-      if (error) setAuthMsg(error.message, 'error');
+      if (error) setAuthMsg(error.message, 'login', 'error');
     }
 
     async function signup() {
-      const email = document.getElementById('inp-email').value.trim();
-      const password = document.getElementById('inp-password').value;
-      setAuthMsg('');
-      const { error } = await sb.auth.signUp({ email, password });
-      if (error) setAuthMsg(error.message, 'error');
-      else setAuthMsg('Revisá tu email para confirmar el registro.', 'info');
+      const firstname = document.getElementById('inp-firstname').value.trim();
+      const lastname = document.getElementById('inp-lastname').value.trim();
+      const email = document.getElementById('inp-signup-email').value.trim();
+      const country = document.getElementById('inp-signup-country').value;
+      const password = document.getElementById('inp-signup-password').value;
+      setAuthMsg('', 'signup');
+      if (!firstname || !email || !country || !password) {
+        setAuthMsg('Completá todos los campos.', 'signup', 'error'); return;
+      }
+      const { data, error } = await sb.auth.signUp({
+        email, password,
+        options: { data: { first_name: firstname, last_name: lastname } }
+      });
+      if (error) { setAuthMsg(error.message, 'signup', 'error'); return; }
+      if (data.user) {
+        await sb.from('user_settings').upsert({
+          user_id: data.user.id, country, updated_at: new Date().toISOString()
+        });
+      }
+      setAuthMsg('¡Cuenta creada! Ya podés empezar.', 'signup', 'info');
     }
 
     async function logout() { closePanel(); await sb.auth.signOut(); }
 
-    function setAuthMsg(msg, type) {
-      ['auth-error','auth-info'].forEach(id => document.getElementById(id).classList.add('hidden'));
+    function setAuthMsg(msg, form, type) {
+      const errId = form === 'signup' ? 'auth-error-signup' : 'auth-error';
+      const infoId = form === 'signup' ? 'auth-info-signup' : null;
+      document.getElementById(errId).classList.add('hidden');
+      if (infoId) document.getElementById(infoId).classList.add('hidden');
       if (!msg) return;
-      const el = document.getElementById(type === 'error' ? 'auth-error' : 'auth-info');
-      el.textContent = msg; el.classList.remove('hidden');
+      if (type === 'error') {
+        const el = document.getElementById(errId); el.textContent = msg; el.classList.remove('hidden');
+      } else if (infoId) {
+        const el = document.getElementById(infoId); el.textContent = msg; el.classList.remove('hidden');
+      }
     }
 
     // ── Panel ─────────────────────────────────────────────────────────────────
@@ -359,7 +411,13 @@
       document.getElementById('goal-display').textContent = GOAL;
       document.getElementById('goal-saved').classList.add('hidden');
       document.getElementById('country-saved').classList.add('hidden');
-      refreshCountryButtons();
+      const sel = document.getElementById('sel-country');
+      sel.value = userSettings.custom_api_url ? 'custom' : (userSettings.country || 'world');
+      document.getElementById('custom-api-row').classList.toggle('hidden', sel.value !== 'custom');
+      if (userSettings.custom_api_url) document.getElementById('inp-custom-api').value = userSettings.custom_api_url;
+      sel.onchange = () => {
+        document.getElementById('custom-api-row').classList.toggle('hidden', sel.value !== 'custom');
+      };
       renderCustomFoodsList();
       document.getElementById('panel').classList.remove('translate-x-full');
       document.getElementById('panel-overlay').classList.remove('hidden');
@@ -377,22 +435,20 @@
       render();
     }
 
-    function setCountry(country) {
-      userSettings.country = country;
+    async function saveCountry() {
+      const country = document.getElementById('sel-country').value;
       if (country === 'custom') {
-        document.getElementById('custom-api-row').classList.remove('hidden');
-        document.getElementById('inp-custom-api').value = userSettings.custom_api_url || '';
         document.getElementById('inp-custom-api').focus();
-      } else {
-        userSettings.custom_api_url = null;
-        document.getElementById('custom-api-row').classList.add('hidden');
-        persistSettings();
+        return;
       }
-      refreshCountryButtons();
+      userSettings.country = country;
+      userSettings.custom_api_url = null;
+      await persistSettings();
     }
 
     async function saveCustomApi() {
       userSettings.custom_api_url = document.getElementById('inp-custom-api').value.trim() || null;
+      if (userSettings.custom_api_url) userSettings.country = 'custom';
       await persistSettings();
     }
 
@@ -408,15 +464,7 @@
       setTimeout(() => el.classList.add('hidden'), 2000);
     }
 
-    function refreshCountryButtons() {
-      const active = userSettings.custom_api_url ? 'custom' : (userSettings.country || 'world');
-      document.querySelectorAll('.country-btn').forEach(btn =>
-        btn.classList.toggle('active', btn.dataset.country === active));
-      document.getElementById('custom-api-row').classList.toggle('hidden', active !== 'custom');
-      if (active === 'custom') document.getElementById('inp-custom-api').value = userSettings.custom_api_url || '';
-    }
-
-    // ── Custom foods ──────────────────────────────────────────────────────────
+// ── Custom foods ──────────────────────────────────────────────────────────
     async function addCustomFood() {
       const name = document.getElementById('inp-cf-name').value.trim();
       const kcal100 = parseFloat(document.getElementById('inp-cf-kcal').value);
