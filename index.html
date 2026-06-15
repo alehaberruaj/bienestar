@@ -123,6 +123,38 @@
   <script>
     // ── Food database (kcal per 100g) ────────────────────────────────────────
     const FOODS = [
+      // Israelí
+      { n: 'Hummus', k: 177 },
+      { n: 'Falafel', k: 333 },
+      { n: 'Tahini (pasta de sésamo)', k: 595 },
+      { n: 'Pita', k: 275 },
+      { n: 'Laffa', k: 280 },
+      { n: 'Challah', k: 290 },
+      { n: 'Labaneh', k: 170 },
+      { n: 'Cottage cheese', k: 98 },
+      { n: 'Burekas de queso', k: 330 },
+      { n: 'Burekas de papa', k: 300 },
+      { n: 'Shakshuka', k: 100 },
+      { n: 'Schnitzel de pollo', k: 250 },
+      { n: 'Shawarma de pollo', k: 220 },
+      { n: 'Shawarma de carne', k: 260 },
+      { n: 'Sabich', k: 210 },
+      { n: 'Samba (amba)', k: 70 },
+      { n: 'Ensalada israelí', k: 50 },
+      { n: 'Zhug (skhug)', k: 100 },
+      { n: 'Ptitim (pasta israelí)', k: 360 },
+      { n: 'Jachnun', k: 300 },
+      { n: 'Malawach', k: 350 },
+      { n: 'Knafeh', k: 350 },
+      { n: 'Babka de chocolate', k: 380 },
+      { n: 'Rugelach', k: 420 },
+      { n: 'Bamba', k: 560 },
+      { n: 'Bissli', k: 450 },
+      { n: 'Bourekas de espinaca', k: 290 },
+      { n: 'Halva', k: 516 },
+      { n: 'Malabi', k: 120 },
+      { n: 'Krembo', k: 430 },
+      { n: 'Pan de pita integral', k: 250 },
       // Carnes
       { n: 'Pechuga de pollo', k: 165 },
       { n: 'Muslo de pollo', k: 209 },
@@ -319,7 +351,7 @@
 
     async function fetchOpenFoodFacts(q, alreadyShown) {
       try {
-        const url = `https://world.openfoodfacts.org/cgi/search.pl?action=process&search_terms=${encodeURIComponent(q)}&fields=product_name,nutriments&json=1&page_size=8&lc=es`;
+        const url = `https://il.openfoodfacts.org/cgi/search.pl?action=process&search_terms=${encodeURIComponent(q)}&fields=product_name,nutriments&json=1&page_size=8`;
         const res = await fetch(url);
         const data = await res.json();
         const apiResults = (data.products || [])
