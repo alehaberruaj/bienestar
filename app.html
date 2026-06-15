@@ -30,6 +30,11 @@
     .inp:focus { box-shadow: 3px 3px 0 #0055ff; }
     .card { background: #fff; border: 2px solid #0a0a0a; border-radius: 8px; }
     select.inp { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%230a0a0a' stroke-width='2' fill='none'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 0.75rem center; padding-right: 2rem; cursor: pointer; }
+    .tab-btn { flex: 1; padding: 0.6rem; font-weight: 800; font-size: 0.8rem; border: none; background: transparent; cursor: pointer; border-bottom: 3px solid transparent; color: #888; transition: all 0.1s; }
+    .tab-btn.active { color: #0a0a0a; border-bottom-color: #0055ff; }
+    textarea.inp { resize: none; }
+    #modal-overlay { display: none; }
+    #modal-overlay.open { display: flex; }
   </style>
 </head>
 <body class="min-h-screen flex flex-col items-center py-8 px-4">
@@ -165,61 +170,130 @@
       </div>
     </div>
 
-    <!-- Day nav -->
-    <div class="flex items-center justify-between mb-6">
-      <button onclick="changeDay(-1)" class="btn-ghost w-12 h-12 flex items-center justify-center rounded-md text-2xl font-black">‹</button>
-      <div class="text-center">
-        <div id="day-label" class="text-xl font-black"></div>
-        <div id="day-sub" class="text-sm text-gray-500 font-medium"></div>
-      </div>
-      <button onclick="changeDay(1)" id="btn-next" class="btn-ghost w-12 h-12 flex items-center justify-center rounded-md text-2xl font-black disabled:opacity-30 disabled:cursor-not-allowed disabled:shadow-none">›</button>
+    <!-- Tabs -->
+    <div class="flex mb-6" style="border-bottom:2px solid #0a0a0a;">
+      <button class="tab-btn active" id="tab-btn-cal" onclick="showTab('cal')">🍽️ Calorías</button>
+      <button class="tab-btn" id="tab-btn-peso" onclick="showTab('peso')">⚖️ Peso</button>
     </div>
 
-    <!-- Total -->
-    <div class="card p-5 mb-6 shadow-hard">
-      <div class="flex items-end justify-between mb-3">
-        <div>
-          <span id="total-cal" class="mono text-5xl font-bold leading-none">0</span>
-          <span class="text-lg font-bold text-gray-400 ml-1">kcal</span>
+    <!-- ── Tab Calorías ─────────────────────────────────────────────────────── -->
+    <div id="tab-cal">
+
+      <!-- Day nav -->
+      <div class="flex items-center justify-between mb-6">
+        <button onclick="changeDay(-1)" class="btn-ghost w-12 h-12 flex items-center justify-center rounded-md text-2xl font-black">‹</button>
+        <div class="text-center flex-1">
+          <div id="day-label" class="text-xl font-black"></div>
+          <div id="day-sub" class="text-sm text-gray-500 font-medium"></div>
         </div>
-        <span id="total-pct" class="mono text-sm font-bold text-gray-400 pb-1">0% del objetivo</span>
+        <button onclick="openDatePicker()" class="btn-ghost w-10 h-10 flex items-center justify-center rounded-md text-base mr-1" title="Ir a fecha">📅</button>
+        <input type="date" id="date-picker" class="sr-only" onchange="goToDate(this.value)" />
+        <button onclick="changeDay(1)" id="btn-next" class="btn-ghost w-12 h-12 flex items-center justify-center rounded-md text-2xl font-black disabled:opacity-30 disabled:cursor-not-allowed disabled:shadow-none">›</button>
       </div>
-      <div class="w-full rounded-full overflow-hidden" style="height:10px; background:#e5e0d8; border:1.5px solid #ccc;">
-        <div id="progress-bar" class="h-full rounded-full transition-all duration-500" style="width:0%; background:#0055ff;"></div>
-      </div>
-    </div>
 
-    <!-- Form -->
-    <form id="add-form" onsubmit="addEntry(event)" autocomplete="off" class="mb-6 space-y-3">
-      <div id="meal-buttons" class="flex gap-1.5 flex-wrap"></div>
-      <div id="mode-search" class="relative">
-        <input id="inp-food" type="text" placeholder="Buscar alimento…" class="inp" oninput="onFoodInput()" onkeydown="onFoodKey(event)" />
-        <div id="suggestions" class="absolute z-20 w-full bg-white rounded-md mt-1 shadow-hard overflow-y-auto max-h-52 hidden" style="border:2px solid #0a0a0a;"></div>
-      </div>
-      <div id="mode-manual" class="hidden">
-        <input id="inp-manual-name" type="text" placeholder="Nombre del alimento" class="inp" style="border-color:#d97706;" />
-      </div>
-      <div id="row-weight" class="flex gap-2">
-        <div class="relative flex-1">
-          <input id="inp-weight" type="number" placeholder="Gramos" min="1" class="inp pr-20" oninput="updatePreview()" />
-          <span id="kcal-ref" class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400 pointer-events-none"></span>
+      <!-- Total -->
+      <div class="card p-5 mb-6 shadow-hard">
+        <div class="flex items-end justify-between mb-3">
+          <div>
+            <span id="total-cal" class="mono text-5xl font-bold leading-none">0</span>
+            <span class="text-lg font-bold text-gray-400 ml-1">kcal</span>
+          </div>
+          <span id="total-pct" class="mono text-sm font-bold text-gray-400 pb-1">0% del objetivo</span>
         </div>
-        <div id="calc-preview" class="mono w-28 card flex items-center justify-center text-sm font-bold text-gray-400 shadow-hard-sm">— kcal</div>
-        <button type="submit" id="btn-add" class="btn-blue rounded-md px-5 text-xl">+</button>
+        <div class="w-full rounded-full overflow-hidden" style="height:10px; background:#e5e0d8; border:1.5px solid #ccc;">
+          <div id="progress-bar" class="h-full rounded-full transition-all duration-500" style="width:0%; background:#0055ff;"></div>
+        </div>
       </div>
-      <div id="row-manual-kcal" class="hidden flex gap-2">
-        <input id="inp-manual-kcal" type="number" placeholder="Calorías totales (kcal)" min="1" class="inp flex-1" style="border-color:#d97706;" />
-        <button type="submit" class="rounded-md px-5 text-xl font-bold text-white" style="background:#d97706;border:2px solid #92400e;box-shadow:3px 3px 0 #92400e;">+</button>
+
+      <!-- Form -->
+      <form id="add-form" onsubmit="addEntry(event)" autocomplete="off" class="mb-6 space-y-3">
+        <div id="meal-buttons" class="flex gap-1.5 flex-wrap"></div>
+        <div id="mode-search" class="relative">
+          <input id="inp-food" type="text" placeholder="Buscar alimento…" class="inp" oninput="onFoodInput()" onkeydown="onFoodKey(event)" />
+          <div id="suggestions" class="absolute z-20 w-full bg-white rounded-md mt-1 shadow-hard overflow-y-auto max-h-52 hidden" style="border:2px solid #0a0a0a;"></div>
+        </div>
+        <div id="mode-manual" class="hidden">
+          <input id="inp-manual-name" type="text" placeholder="Nombre del alimento" class="inp" style="border-color:#d97706;" />
+        </div>
+        <div id="row-weight" class="flex gap-2">
+          <div class="relative flex-1">
+            <input id="inp-weight" type="number" placeholder="Gramos" min="1" class="inp pr-20" oninput="updatePreview()" />
+            <span id="kcal-ref" class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400 pointer-events-none"></span>
+          </div>
+          <div id="calc-preview" class="mono w-28 card flex items-center justify-center text-sm font-bold text-gray-400 shadow-hard-sm">— kcal</div>
+          <button type="submit" id="btn-add" class="btn-blue rounded-md px-5 text-xl">+</button>
+        </div>
+        <div id="row-manual-kcal" class="hidden flex gap-2">
+          <input id="inp-manual-kcal" type="number" placeholder="Calorías totales (kcal)" min="1" class="inp flex-1" style="border-color:#d97706;" />
+          <button type="submit" class="rounded-md px-5 text-xl font-bold text-white" style="background:#d97706;border:2px solid #92400e;box-shadow:3px 3px 0 #92400e;">+</button>
+        </div>
+      </form>
+
+      <div id="entries-list" class="space-y-4 mb-6 min-h-[2rem]"></div>
+
+      <!-- Nota del día -->
+      <div class="card p-4 shadow-hard-sm mb-6">
+        <label class="block text-xs font-black uppercase tracking-widest mb-2">📝 Nota del día</label>
+        <textarea id="day-note" maxlength="500" placeholder="Anotá algo sobre este día…" class="inp textarea w-full text-sm" rows="2" oninput="onNoteInput()" onblur="saveNote()"></textarea>
+        <div class="flex justify-between mt-1">
+          <span id="note-saved" class="text-xs font-bold text-green-700 hidden">✓ Guardado</span>
+          <span class="text-xs text-gray-400 ml-auto"><span id="note-chars">0</span>/500</span>
+        </div>
       </div>
-    </form>
 
-    <div id="entries-list" class="space-y-4 mb-8 min-h-[2rem]"></div>
+      <div class="card p-4 shadow-hard">
+        <h2 class="text-xs font-black uppercase tracking-widest mb-4">Últimos 7 días</h2>
+        <div id="week-chart" class="flex items-end justify-between gap-1.5 h-24"></div>
+      </div>
 
-    <div class="card p-4 shadow-hard">
-      <h2 class="text-xs font-black uppercase tracking-widest mb-4">Últimos 7 días</h2>
-      <div id="week-chart" class="flex items-end justify-between gap-1.5 h-24"></div>
     </div>
 
+    <!-- ── Tab Peso ──────────────────────────────────────────────────────────── -->
+    <div id="tab-peso" class="hidden">
+
+      <!-- Day nav peso -->
+      <div class="flex items-center justify-between mb-6">
+        <button onclick="changeDay(-1); loadWeightDay()" class="btn-ghost w-12 h-12 flex items-center justify-center rounded-md text-2xl font-black">‹</button>
+        <div class="text-center flex-1">
+          <div id="peso-day-label" class="text-xl font-black"></div>
+          <div id="peso-day-sub" class="text-sm text-gray-500 font-medium"></div>
+        </div>
+        <button onclick="openDatePicker()" class="btn-ghost w-10 h-10 flex items-center justify-center rounded-md text-base mr-1" title="Ir a fecha">📅</button>
+        <button onclick="changeDay(1); loadWeightDay()" id="peso-btn-next" class="btn-ghost w-12 h-12 flex items-center justify-center rounded-md text-2xl font-black disabled:opacity-30 disabled:cursor-not-allowed disabled:shadow-none">›</button>
+      </div>
+
+      <!-- Peso del día -->
+      <div class="card p-5 mb-6 shadow-hard">
+        <label class="block text-xs font-black uppercase tracking-widest mb-3">Peso de hoy</label>
+        <div class="flex gap-2 items-center">
+          <div class="relative flex-1">
+            <input id="inp-peso" type="number" step="0.1" min="20" max="300" placeholder="kg" class="inp pr-10" />
+            <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400 pointer-events-none">kg</span>
+          </div>
+          <button onclick="saveWeight()" class="btn-blue rounded-md px-5 py-2.5 text-sm">Guardar</button>
+        </div>
+        <p id="peso-saved" class="text-xs font-bold text-green-700 mt-2 hidden">✓ Guardado</p>
+      </div>
+
+      <!-- Gráfico de evolución -->
+      <div class="card p-4 shadow-hard">
+        <h2 class="text-xs font-black uppercase tracking-widest mb-4">Evolución del peso</h2>
+        <div id="weight-chart-wrap" class="w-full overflow-x-auto">
+          <svg id="weight-chart-svg" width="100%" height="140" style="min-width:260px;"></svg>
+        </div>
+        <p id="weight-empty" class="text-center text-gray-400 text-sm py-4 hidden">Todavía no hay registros.</p>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- ── Modal personalizado ──────────────────────────────────────────────── -->
+  <div id="modal-overlay" class="fixed inset-0 bg-black/40 z-50 items-center justify-center px-4" onclick="modalBgClick(event)">
+    <div class="card shadow-hard p-6 max-w-sm w-full">
+      <p id="modal-msg" class="font-bold text-base mb-5 leading-snug"></p>
+      <div id="modal-btns" class="flex gap-2 justify-end"></div>
+    </div>
   </div>
 
   <script>
@@ -643,7 +717,7 @@
     }
 
     async function deleteMeal(i) {
-      if (!confirm(`¿Borrar "${userMeals[i].name}"?\nLas entradas pasadas van a aparecer como "Sin categoría".`)) return;
+      if (!await showConfirm(`¿Borrar "${userMeals[i].name}"? Las entradas pasadas van a aparecer como "Sin categoría".`)) return;
       userMeals.splice(i, 1);
       await persistSettings();
       renderUserMealsList();
@@ -879,6 +953,7 @@
       }
       updateDayLabel();
       renderChart();
+      loadNote();
     }
 
     function updateDayLabel(){
@@ -886,6 +961,8 @@
       document.getElementById('day-label').textContent=main;
       document.getElementById('day-sub').textContent=sub;
       document.getElementById('btn-next').disabled=offset>=0;
+      const pl=document.getElementById('peso-day-label');
+      if(pl){pl.textContent=main;document.getElementById('peso-day-sub').textContent=sub;const bn=document.getElementById('peso-btn-next');if(bn)bn.disabled=offset>=0;}
     }
 
     async function renderChart(){
@@ -914,7 +991,7 @@
     // ── Actions ───────────────────────────────────────────────────────────────
     async function addEntry(e){
       e.preventDefault();
-      if(!selectedMeal){alert('Seleccioná una comida primero.');return;}
+      if(!selectedMeal){await showAlert('Seleccioná una comida primero.');return;}
       const btn=document.getElementById('btn-add');btn.disabled=true;
       const iso=isoDate(offset);
       if(manualMode){
@@ -950,6 +1027,138 @@
     document.addEventListener('click',e=>{
       if(!e.target.closest('#inp-food')&&!e.target.closest('#suggestions')) hideSuggestions();
     });
+
+    // ── Modal ─────────────────────────────────────────────────────────────────
+    function showModal(msg, buttons) {
+      document.getElementById('modal-msg').textContent = msg;
+      document.getElementById('modal-btns').innerHTML = buttons;
+      document.getElementById('modal-overlay').classList.add('open');
+    }
+    function closeModal(result) {
+      document.getElementById('modal-overlay').classList.remove('open');
+      if (window._modalResolve) { window._modalResolve(result); window._modalResolve = null; }
+    }
+    function modalBgClick(e) { if (e.target === e.currentTarget) closeModal(false); }
+    function showAlert(msg) {
+      return new Promise(r => {
+        window._modalResolve = r;
+        showModal(msg, `<button onclick="closeModal(true)" class="btn-blue rounded-md px-5 py-2 text-sm">OK</button>`);
+      });
+    }
+    function showConfirm(msg) {
+      return new Promise(r => {
+        window._modalResolve = r;
+        showModal(msg, `
+          <button onclick="closeModal(false)" class="btn-ghost rounded-md px-4 py-2 text-sm">Cancelar</button>
+          <button onclick="closeModal(true)" class="btn-blue rounded-md px-4 py-2 text-sm">Confirmar</button>`);
+      });
+    }
+
+    // ── Tabs ──────────────────────────────────────────────────────────────────
+    function showTab(tab) {
+      document.getElementById('tab-cal').classList.toggle('hidden', tab !== 'cal');
+      document.getElementById('tab-peso').classList.toggle('hidden', tab !== 'peso');
+      document.getElementById('tab-btn-cal').classList.toggle('active', tab === 'cal');
+      document.getElementById('tab-btn-peso').classList.toggle('active', tab === 'peso');
+      updateDayLabel();
+      if (tab === 'peso') loadWeightDay();
+    }
+
+    // ── Calendar date picker ──────────────────────────────────────────────────
+    function openDatePicker() {
+      const picker = document.getElementById('date-picker');
+      picker.value = isoDate(offset);
+      picker.showPicker ? picker.showPicker() : picker.click();
+    }
+    function goToDate(val) {
+      if (!val) return;
+      const today = new Date(); today.setHours(0,0,0,0);
+      const [y,m,d] = val.split('-').map(Number);
+      const target = new Date(y, m-1, d);
+      offset = Math.round((target - today) / 86400000);
+      if (offset > 0) offset = 0;
+      render();
+      if (!document.getElementById('tab-peso').classList.contains('hidden')) loadWeightDay();
+    }
+
+    // ── Notes ─────────────────────────────────────────────────────────────────
+    let noteSaveTimer = null;
+    function onNoteInput() {
+      const ta = document.getElementById('day-note');
+      document.getElementById('note-chars').textContent = ta.value.length;
+      clearTimeout(noteSaveTimer);
+      noteSaveTimer = setTimeout(saveNote, 1500);
+    }
+    async function loadNote() {
+      const { data } = await sb.from('daily_notes').select('note_text').eq('user_id', currentUser.id).eq('note_date', isoDate(offset)).single();
+      const ta = document.getElementById('day-note');
+      ta.value = data?.note_text || '';
+      document.getElementById('note-chars').textContent = ta.value.length;
+      document.getElementById('note-saved').classList.add('hidden');
+    }
+    async function saveNote() {
+      const text = document.getElementById('day-note').value;
+      await sb.from('daily_notes').upsert({ user_id: currentUser.id, note_date: isoDate(offset), note_text: text, updated_at: new Date().toISOString() });
+      const el = document.getElementById('note-saved');
+      el.classList.remove('hidden');
+      setTimeout(() => el.classList.add('hidden'), 2000);
+    }
+
+    // ── Weight ────────────────────────────────────────────────────────────────
+    function updateWeightDayLabel() {
+      const { main, sub } = friendlyDate(isoDate(offset));
+      document.getElementById('peso-day-label').textContent = main;
+      document.getElementById('peso-day-sub').textContent = sub;
+      const btn = document.getElementById('peso-btn-next');
+      if (btn) btn.disabled = offset >= 0;
+    }
+    async function loadWeightDay() {
+      updateWeightDayLabel();
+      const { data } = await sb.from('weight_logs').select('weight_kg').eq('user_id', currentUser.id).eq('log_date', isoDate(offset)).single();
+      document.getElementById('inp-peso').value = data?.weight_kg ?? '';
+      document.getElementById('peso-saved').classList.add('hidden');
+      await renderWeightChart();
+    }
+    async function saveWeight() {
+      const val = parseFloat(document.getElementById('inp-peso').value);
+      if (!val || val < 20 || val > 300) { await showAlert('Ingresá un peso válido (entre 20 y 300 kg).'); return; }
+      await sb.from('weight_logs').upsert({ user_id: currentUser.id, log_date: isoDate(offset), weight_kg: val, updated_at: new Date().toISOString() });
+      const el = document.getElementById('peso-saved'); el.classList.remove('hidden');
+      setTimeout(() => el.classList.add('hidden'), 2000);
+      await renderWeightChart();
+    }
+    async function renderWeightChart() {
+      const { data } = await sb.from('weight_logs').select('log_date,weight_kg').eq('user_id', currentUser.id).order('log_date', { ascending: true }).limit(90);
+      const empty = document.getElementById('weight-empty');
+      const svg = document.getElementById('weight-chart-svg');
+      if (!data || data.length === 0) { empty.classList.remove('hidden'); svg.innerHTML = ''; return; }
+      empty.classList.add('hidden');
+      const W = svg.parentElement.clientWidth || 320;
+      svg.setAttribute('width', W);
+      const H = 140, padL = 38, padR = 10, padT = 12, padB = 24;
+      const weights = data.map(d => Number(d.weight_kg));
+      const minW = Math.min(...weights), maxW = Math.max(...weights);
+      const range = maxW - minW || 1;
+      const xS = i => padL + (i / Math.max(data.length - 1, 1)) * (W - padL - padR);
+      const yS = w => padT + (1 - (w - minW) / range) * (H - padT - padB);
+      const pts = data.map((d,i) => `${xS(i)},${yS(Number(d.weight_kg))}`).join(' ');
+      // Y axis labels
+      const yLabels = [minW, (minW+maxW)/2, maxW].map(v =>
+        `<text x="${padL-5}" y="${yS(v)+4}" text-anchor="end" font-size="10" fill="#888" font-family="Space Mono,monospace">${v.toFixed(1)}</text>`).join('');
+      // X axis labels (first, last, and a few in between)
+      const xTicks = data.filter((_,i) => i===0 || i===data.length-1 || (data.length>4 && i===Math.round((data.length-1)/2))).map(d => {
+        const i = data.indexOf(d);
+        const lbl = d.log_date.slice(5).replace('-','/');
+        return `<text x="${xS(i)}" y="${H-5}" text-anchor="middle" font-size="9" fill="#888" font-family="Space Grotesk,sans-serif">${lbl}</text>`;
+      }).join('');
+      const dots = data.map((d,i) => {
+        const cx=xS(i), cy=yS(Number(d.weight_kg)), isToday=d.log_date===isoDate(0);
+        return `<circle cx="${cx}" cy="${cy}" r="${isToday?4:3}" fill="${isToday?'#0055ff':'#0a0a0a'}" stroke="#f0ede6" stroke-width="1.5"/>`;
+      }).join('');
+      svg.innerHTML = `
+        <polyline points="${pts}" fill="none" stroke="#0055ff" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+        ${yLabels}${xTicks}${dots}`;
+    }
 
     init();
   </script>
