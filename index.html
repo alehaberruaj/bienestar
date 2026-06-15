@@ -4,13 +4,24 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Calorías</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Space+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    body { background: #f0ede6; color: #0a0a0a; font-family: system-ui, sans-serif; }
-    input, button { font-family: inherit; }
+    body { background: #f0ede6; color: #0a0a0a; font-family: 'Space Grotesk', system-ui, sans-serif; }
+    input, button { font-family: 'Space Grotesk', system-ui, sans-serif; }
+    .mono { font-family: 'Space Mono', monospace; }
     .entry-row .delete-btn { opacity: 0; transition: opacity 0.12s; }
     .entry-row:hover .delete-btn { opacity: 1; }
     #suggestions:empty { display: none; }
+    ::placeholder {
+      color: #0a0a0a;
+      opacity: 0.4;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-size: 0.7rem;
+    }
     .border-hard { border: 2px solid #0a0a0a; }
     .shadow-hard { box-shadow: 3px 3px 0 #0a0a0a; }
     .shadow-hard-sm { box-shadow: 2px 2px 0 #0a0a0a; }
@@ -95,10 +106,10 @@
     <div class="card p-5 mb-6 shadow-hard">
       <div class="flex items-end justify-between mb-3">
         <div>
-          <span id="total-cal" class="text-5xl font-black leading-none">0</span>
+          <span id="total-cal" class="mono text-5xl font-bold leading-none">0</span>
           <span class="text-lg font-bold text-gray-400 ml-1">kcal</span>
         </div>
-        <span id="total-pct" class="text-sm font-bold text-gray-400 pb-1">0% del objetivo</span>
+        <span id="total-pct" class="mono text-sm font-bold text-gray-400 pb-1">0% del objetivo</span>
       </div>
       <div class="w-full rounded-full overflow-hidden" style="height:10px; background:#e5e0d8; border:1.5px solid #ccc;">
         <div id="progress-bar" class="h-full rounded-full transition-all duration-500" style="width:0%; background:#0055ff;"></div>
@@ -145,7 +156,7 @@
           <input id="inp-weight" type="number" placeholder="Gramos" min="1" class="inp pr-20" oninput="updatePreview()" />
           <span id="kcal-ref" class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400 pointer-events-none"></span>
         </div>
-        <div id="calc-preview" class="w-28 card flex items-center justify-center text-sm font-black text-gray-400 shadow-hard-sm">— kcal</div>
+        <div id="calc-preview" class="mono w-28 card flex items-center justify-center text-sm font-bold text-gray-400 shadow-hard-sm">— kcal</div>
         <button type="submit" class="btn-blue rounded-md px-5 text-xl">+</button>
       </div>
 
@@ -535,7 +546,7 @@
                 <div class="truncate font-semibold">${esc(e.name)}</div>
                 ${e.weight ? `<div class="text-xs text-gray-400">${e.weight}g · ${e.kcal100} kcal/100g</div>` : ''}
               </div>
-              <span class="font-black mx-3 shrink-0">${e.calories} kcal</span>
+              <span class="mono font-bold mx-3 shrink-0">${e.calories} kcal</span>
               <button class="delete-btn text-red-500 hover:text-red-700 text-base leading-none shrink-0 font-bold"
                 onclick="deleteEntry('${iso}', ${e.id})">✕</button>
             </div>`).join('');
@@ -543,7 +554,7 @@
             <div class="card shadow-hard-sm overflow-hidden">
               <div class="flex items-center justify-between px-3 py-2" style="background:#0a0a0a;">
                 <span class="text-xs font-black text-white uppercase tracking-widest">${m.label}</span>
-                <span class="text-xs font-black text-white">${groupTotal} kcal</span>
+                <span class="mono text-xs font-bold text-white">${groupTotal} kcal</span>
               </div>
               ${rows}
             </div>`;
