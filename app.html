@@ -121,6 +121,18 @@
           <p class="text-xs text-gray-500 mt-1">Actual: <span id="goal-display" class="font-bold text-black"></span> kcal/día</p>
         </div>
 
+        <!-- Mis comidas -->
+        <div>
+          <label class="block text-xs font-black uppercase tracking-widest mb-2">Mis comidas</label>
+          <div id="user-meals-list" class="space-y-1 mb-3"></div>
+          <div class="flex gap-2 mb-2">
+            <input id="inp-meal-emoji" type="text" placeholder="🍽️" class="inp text-center font-bold" style="width:3.2rem;flex-shrink:0;" maxlength="2" />
+            <input id="inp-meal-name" type="text" placeholder="Nombre de la comida" class="inp flex-1" />
+            <button onclick="addMeal()" class="btn-blue rounded-md px-3 py-2 text-sm font-bold shrink-0">+</button>
+          </div>
+          <button onclick="resetMeals()" class="text-xs text-gray-400 hover:text-black underline underline-offset-2 font-medium">Restaurar por defecto</button>
+        </div>
+
         <!-- Mis alimentos -->
         <div>
           <label class="block text-xs font-black uppercase tracking-widest mb-2">Mis alimentos</label>
@@ -180,13 +192,7 @@
 
     <!-- Form -->
     <form id="add-form" onsubmit="addEntry(event)" autocomplete="off" class="mb-6 space-y-3">
-      <div class="flex gap-1.5">
-        <button type="button" onclick="selectMeal('desayuno')" data-meal="desayuno" class="meal-btn flex-1">🌅<br>Desayuno</button>
-        <button type="button" onclick="selectMeal('almuerzo')" data-meal="almuerzo" class="meal-btn flex-1">🌞<br>Almuerzo</button>
-        <button type="button" onclick="selectMeal('merienda')" data-meal="merienda" class="meal-btn flex-1">🍎<br>Merienda</button>
-        <button type="button" onclick="selectMeal('cena')"     data-meal="cena"     class="meal-btn flex-1">🌙<br>Cena</button>
-        <button type="button" onclick="selectMeal('otros')"    data-meal="otros"    class="meal-btn flex-1">📦<br>Otros</button>
-      </div>
+      <div id="meal-buttons" class="flex gap-1.5 flex-wrap"></div>
       <div id="mode-search" class="relative">
         <input id="inp-food" type="text" placeholder="Buscar alimento…" class="inp" oninput="onFoodInput()" onkeydown="onFoodKey(event)" />
         <div id="suggestions" class="absolute z-20 w-full bg-white rounded-md mt-1 shadow-hard overflow-y-auto max-h-52 hidden" style="border:2px solid #0a0a0a;"></div>
@@ -266,13 +272,13 @@
       { n: 'Coca-Cola', k: 37 }, { n: 'Cerveza', k: 43 }, { n: 'Vino tinto', k: 85 },
     ];
 
-    const MEALS = [
-      { id: 'desayuno', label: '🌅 Desayuno' },
-      { id: 'almuerzo', label: '🌞 Almuerzo' },
-      { id: 'merienda', label: '🍎 Merienda' },
-      { id: 'cena',     label: '🌙 Cena' },
-      { id: 'otros',    label: '📦 Otros' },
+    const DEFAULT_MEALS = [
+      { id: 'desayuno', emoji: '🌅', name: 'Desayuno' },
+      { id: 'almuerzo', emoji: '🌞', name: 'Almuerzo' },
+      { id: 'cena',     emoji: '🌙', name: 'Cena' },
+      { id: 'otros',    emoji: '📦', name: 'Otros' },
     ];
+    let userMeals = DEFAULT_MEALS.map(m => ({...m}));
 
     const COUNTRIES = [
       { code:'world', flag:'🌍', name:'Global' },
@@ -442,12 +448,18 @@
       if (!data) { showScreen('onboarding'); return; }
       showScreen('app');
       document.getElementById('user-email').textContent = currentUser.email;
+      renderMealButtons();
       render();
     }
 
     async function loadUserSettings() {
       const { data } = await sb.from('user_settings').select('*').eq('user_id', currentUser.id).single();
-      if (data) userSettings = data;
+      if (data) {
+        userSettings = data;
+        if (data.meals) {
+          try { userMeals = JSON.parse(data.meals); } catch {}
+        }
+      }
     }
 
     async function loadUserFoods() {
@@ -460,6 +472,7 @@
       await sb.from('user_settings').upsert({ user_id: currentUser.id, country, updated_at: new Date().toISOString() });
       showScreen('app');
       document.getElementById('user-email').textContent = currentUser.email;
+      renderMealButtons();
       render();
     }
 
@@ -530,6 +543,7 @@
       document.getElementById('goal-saved').classList.add('hidden');
       document.getElementById('country-saved').classList.add('hidden');
       document.getElementById('sel-country').value = userSettings.country || 'world';
+      renderUserMealsList();
       renderCustomFoodsList();
       document.getElementById('panel').classList.remove('translate-x-full');
       document.getElementById('panel-overlay').classList.remove('hidden');
@@ -559,12 +573,72 @@
       await sb.from('user_settings').upsert({
         user_id: currentUser.id,
         country: userSettings.country,
-        custom_api_url: userSettings.custom_api_url || null,
+        custom_api_url: null,
+        meals: JSON.stringify(userMeals),
         updated_at: new Date().toISOString(),
       });
       const el = document.getElementById('country-saved');
       el.classList.remove('hidden');
       setTimeout(() => el.classList.add('hidden'), 2000);
+    }
+
+    // ── Meal management ───────────────────────────────────────────────────────
+    function renderMealButtons() {
+      const container = document.getElementById('meal-buttons');
+      if (!container) return;
+      container.innerHTML = userMeals.map(m => `
+        <button type="button" onclick="selectMeal('${m.id}')" data-meal="${m.id}" class="meal-btn flex-1 min-w-[4rem]">
+          ${m.emoji}<br><span style="font-size:0.65rem">${esc(m.name)}</span>
+        </button>`).join('');
+    }
+
+    function renderUserMealsList() {
+      const list = document.getElementById('user-meals-list');
+      if (!list) return;
+      list.innerHTML = userMeals.map((m, i) => `
+        <div class="flex items-center gap-2 bg-white border border-gray-200 rounded px-3 py-1.5 text-sm">
+          <span class="text-base">${m.emoji}</span>
+          <span class="font-medium flex-1">${esc(m.name)}</span>
+          <button onclick="moveMeal(${i},-1)" class="text-gray-400 hover:text-black font-bold px-1 ${i===0?'opacity-20 pointer-events-none':''}">↑</button>
+          <button onclick="moveMeal(${i},1)" class="text-gray-400 hover:text-black font-bold px-1 ${i===userMeals.length-1?'opacity-20 pointer-events-none':''}">↓</button>
+          <button onclick="deleteMeal(${i})" class="text-red-400 hover:text-red-600 font-bold text-base leading-none ml-1">✕</button>
+        </div>`).join('') || '<p class="text-xs text-gray-400">Sin comidas configuradas.</p>';
+    }
+
+    async function addMeal() {
+      const emoji = document.getElementById('inp-meal-emoji').value.trim() || '🍽️';
+      const name = document.getElementById('inp-meal-name').value.trim();
+      if (!name) return;
+      const id = 'm_' + Date.now();
+      userMeals.push({ id, emoji, name });
+      document.getElementById('inp-meal-emoji').value = '';
+      document.getElementById('inp-meal-name').value = '';
+      await persistSettings();
+      renderUserMealsList();
+      renderMealButtons();
+    }
+
+    async function deleteMeal(i) {
+      userMeals.splice(i, 1);
+      await persistSettings();
+      renderUserMealsList();
+      renderMealButtons();
+    }
+
+    async function moveMeal(i, dir) {
+      const j = i + dir;
+      if (j < 0 || j >= userMeals.length) return;
+      [userMeals[i], userMeals[j]] = [userMeals[j], userMeals[i]];
+      await persistSettings();
+      renderUserMealsList();
+      renderMealButtons();
+    }
+
+    async function resetMeals() {
+      userMeals = DEFAULT_MEALS.map(m => ({...m}));
+      await persistSettings();
+      renderUserMealsList();
+      renderMealButtons();
     }
 
 // ── Custom foods ──────────────────────────────────────────────────────────
@@ -751,7 +825,10 @@
       } else {
         const byMeal={};
         entries.forEach(e=>{const m=e.meal||'otros';if(!byMeal[m])byMeal[m]=[];byMeal[m].push(e);});
-        list.innerHTML=MEALS.filter(m=>byMeal[m.id]).map(m=>{
+        const knownIds=new Set(userMeals.map(m=>m.id));
+        const mealLookup=Object.fromEntries(userMeals.map(m=>[m.id,m]));
+        Object.keys(byMeal).forEach(id=>{if(!knownIds.has(id))userMeals.push({id,emoji:'📦',name:id});});
+        list.innerHTML=userMeals.filter(m=>byMeal[m.id]).map(m=>{
           const group=byMeal[m.id];
           const gt=group.reduce((s,e)=>s+e.calories,0);
           const rows=group.map(e=>`
@@ -766,7 +843,7 @@
             </div>`).join('');
           return `<div class="card shadow-hard-sm overflow-hidden">
             <div class="flex items-center justify-between px-3 py-2" style="background:#0a0a0a;">
-              <span class="text-xs font-black text-white uppercase tracking-widest">${m.label}</span>
+              <span class="text-xs font-black text-white uppercase tracking-widest">${m.emoji} ${esc(m.name)}</span>
               <span class="mono text-xs font-bold text-white">${gt} kcal</span>
             </div>${rows}</div>`;
         }).join('');
